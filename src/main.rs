@@ -5,7 +5,7 @@ use tern::Trit::*;
 use tern::ternary::*;
 
 fn main() {
-	let t4 = Ternary { trits: [Neg, Zero, Zero, Pos] };
-	println!("t4 = {}", t4);
-	println!("sizeof(t4) = {}", size_of::<Ternary4>());
+	let t6 = Ternary { trits: [Neg, Zero, Zero, Pos, Pos, Neg] };
+	println!("t6 = {}", t6);
+	println!("sizeof(t6) = {}", size_of::<Ternary6>());
 }

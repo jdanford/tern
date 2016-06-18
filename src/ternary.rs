@@ -163,8 +163,8 @@ impl fmt::Display for Ternary<[Trit; $n]> {
 
 };}
 
-define_ternary!(4);
-pub type Ternary4 = Ternary<[Trit; 4]>;
+define_ternary!(6);
+pub type Ternary6 = Ternary<[Trit; 6]>;
 
-define_ternary!(8);
-pub type Ternary8 = Ternary<[Trit; 8]>;
+define_ternary!(12);
+pub type Ternary12 = Ternary<[Trit; 12]>;
