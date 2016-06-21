@@ -1,170 +1,92 @@
 use std::fmt;
 use std::fmt::Write;
-use std::ops;
 use trit::Trit;
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Ternary<T: Copy> {
-    pub trits: T
+pub fn clear(trits: &mut [Trit], len: usize) {
+    for i in 0..len {
+        trits[i] = Trit::Zero;
+    }
 }
 
-macro_rules! define_ternary { ($n:expr) => {
+pub fn write_trits<I>(trits: &mut [Trit], rhs: I) where I: IntoIterator<Item=Trit> {
+    for (i, b) in rhs.into_iter().enumerate() {
+        trits[i] = b;
+    }
+}
 
-impl Ternary<[Trit; $n]> {
-    pub fn from_iter<T: Into<Trit>, I: Iterator<Item=T>>(i: I) -> Ternary<[Trit; $n]> {
-        let mut trits = [Trit::Zero; $n];
-        for (i, b) in i.take($n).enumerate() {
-            trits[i] = b.into();
+pub fn write_str(trits: &mut [Trit], s: &str) {
+    write_trits(trits, s.bytes().rev().map(Trit::from))
+}
+
+pub fn read_int(trits: &[Trit], len: usize) -> isize {
+    let mut n = trits[len - 1] as isize;
+
+    for i in (0..len - 1).rev() {
+        let t = trits[i] as isize;
+        n = n * 3 + t
+    }
+
+    n
+}
+
+pub fn get_lst(trits: &[Trit], len: usize) -> Trit {
+    for i in 0..len - 1 {
+        let trit = trits[i];
+        if trit != Trit::Zero {
+            return trit;
         }
-
-        Ternary { trits: trits }
     }
 
-    pub fn from_str(s: &str) -> Ternary<[Trit; $n]> {
-        Ternary::<[Trit; $n]>::from_iter(s.bytes().rev())
-    }
+    Trit::Zero
+}
 
-    pub fn map<F: Fn(Trit) -> Trit>(self, f: F) -> Ternary<[Trit; $n]> {
-        let mut tern = self;
-        for (i, &t) in self.trits.iter().enumerate() {
-            tern.trits[i] = f(t);
+pub fn get_mst(trits: &[Trit], len: usize) -> Trit {
+    for i in (0..len - 1).rev() {
+        let trit = trits[i];
+        if trit != Trit::Zero {
+            return trit;
         }
-
-        tern
     }
 
-    pub fn zip_with(self, rhs: Ternary<[Trit; $n]>, f: fn(Trit, Trit) -> Trit) -> Ternary<[Trit; $n]> {
-        let mut tern = self;
-        for (i, (&a, &b)) in self.trits.iter().zip(rhs.trits.iter()).enumerate() {
-            tern.trits[i] = f(a, b);
-        }
+    Trit::Zero
+}
 
-        tern
-    }
-
-    pub fn sum_with_carry(self, rhs: Ternary<[Trit; $n]>) -> (Ternary<[Trit; $n]>, Trit) {
-        let mut tern = self;
-        let mut carry = Trit::Zero;
-
-        let trit_pairs = self.trits.iter().zip(rhs.trits.iter());
-        for (i, (&a, &b)) in trit_pairs.enumerate() {
-            let (trit_i, carry_i) = a.sum_with_carry(b, carry);
-            tern.trits[i] = trit_i;
-            carry = carry_i;
-        }
-
-        (tern, carry)
-    }
-
-    pub fn partial_product(self, rhs: Trit) -> Ternary<[Trit; $n]> {
-        self.map(|t| Trit::product(t, rhs))
-    }
-
-    pub fn product(self, rhs: Ternary<[Trit; $n]>) -> Ternary<[Trit; ($n * 2)]> {
-        let mut tern = Ternary { trits: [Trit::Zero; ($n * 2)] };
-
-        for (i, &t) in rhs.trits.iter().enumerate() {
-            tern.add_partial(self.partial_product(t), i);
-        }
-
-        tern
+pub fn fmt(trits: &[Trit], f: &mut fmt::Formatter) {
+    for i in (0..trits.len()).rev() {
+        let trit = trits[i];
+        let _ = f.write_char(trit.into());
     }
 }
 
-impl Ternary<[Trit; ($n * 2)]> {
-    pub fn add_partial(&mut self, rhs: Ternary<[Trit; $n]>, offset: usize) {
-        let mut carry = Trit::Zero;
-        for (i, &t) in rhs.trits.iter().enumerate() {
-            let (trit_i, carry_i) = self.trits[offset + i].sum_with_carry(t, carry);
-            self.trits[offset + i] = trit_i;
-            carry = carry_i;
-        }
-
-        self.trits[offset + $n] = carry;
-    }
-
-    pub fn split_lo_hi(self) -> (Ternary<[Trit; $n]>, Ternary<[Trit; $n]>) {
-        let mut lo = [Trit::Zero; $n];
-        let mut hi = [Trit::Zero; $n];
-        lo.copy_from_slice(&self.trits[0..$n]);
-        hi.copy_from_slice(&self.trits[$n..($n * 2)]);
-        (Ternary { trits: lo }, Ternary { trits: hi })
+pub fn mutate<F>(trits: &mut [Trit], f: F) where F: Fn(Trit) -> Trit {
+    for i in 0..trits.len() {
+        trits[i] = f(trits[i]);
     }
 }
 
-impl ops::Neg for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
-
-    fn neg(self) -> Self::Output {
-        self.map(&Trit::neg)
+pub fn mutate2<I, F>(trits: &mut [Trit], rhs: I, f: F) where I: IntoIterator<Item=Trit>, F: Fn(Trit, Trit) -> Trit {
+    for (i, t) in rhs.into_iter().enumerate() {
+        trits[i] = f(trits[i], t);
     }
 }
 
-impl ops::BitAnd for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
+pub fn add<I: IntoIterator<Item=Trit>>(trits: &mut [Trit], rhs: I) -> Trit {
+    let mut carry = Trit::Zero;
 
-    fn bitand(self, rhs: Self) -> Self::Output {
-        self.zip_with(rhs, Trit::bitand)
+    for (i, r) in rhs.into_iter().enumerate() {
+        let (trit_i, carry_i) = trits[i].sum_with_carry(r, carry);
+        trits[i] = trit_i;
+        carry = carry_i;
     }
+
+    carry
 }
 
-impl ops::BitOr for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        self.zip_with(rhs, Trit::bitor)
+pub fn multiply(trits: &mut [Trit], lhs: &[Trit], rhs: &[Trit]) {
+    let mut carry;
+    let len = lhs.len();
+    for i in 0..len {
+        carry = add(&mut trits[i..], lhs.into_iter().map(|&l| l * rhs[i]));
+        trits[i + len] = carry;
     }
 }
-
-impl ops::Add for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        let (sum, _) = self.sum_with_carry(rhs);
-        sum
-    }
-}
-
-impl ops::Sub for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        self + (-rhs)
-    }
-}
-
-impl ops::Mul for Ternary<[Trit; $n]> {
-    type Output = Ternary<[Trit; $n]>;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        let product = self.product(rhs);
-        let (lo, _) = product.split_lo_hi();
-        lo
-    }
-}
-
-impl fmt::Debug for Ternary<[Trit; $n]> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let l = self.trits.len();
-        for i in (0..l).rev() {
-            let trit = self.trits[i];
-            let _ = f.write_char(trit.into());
-        }
-
-        Ok(())
-    }
-}
-
-impl fmt::Display for Ternary<[Trit; $n]> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
-
-};}
-
-define_ternary!(6);
-pub type Ternary6 = Ternary<[Trit; 6]>;
-
-define_ternary!(12);
-pub type Ternary12 = Ternary<[Trit; 12]>;

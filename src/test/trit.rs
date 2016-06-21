@@ -45,3 +45,16 @@ fn trit_sum_with_carry() {
 	assert_eq!(Neg.sum_with_carry(Pos, Zero),   (Zero, Zero));
 	assert_eq!(Pos.sum_with_carry(Neg, Zero),   (Zero, Zero));
 }
+
+#[test]
+fn trit_product() {
+	assert_eq!(Zero * Pos, Zero);
+	assert_eq!(Zero * Zero, Zero);
+	assert_eq!(Zero * Neg, Zero);
+	assert_eq!(Pos * Pos, Pos);
+	assert_eq!(Pos * Zero, Zero);
+	assert_eq!(Pos * Neg, Neg);
+	assert_eq!(Neg * Pos, Neg);
+	assert_eq!(Neg * Zero, Zero);
+	assert_eq!(Neg * Neg, Pos);
+}

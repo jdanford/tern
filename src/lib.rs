@@ -1,10 +1,13 @@
 extern crate core;
 
-pub mod trit;
-pub mod ternary;
+mod trit;
+mod ternary;
+mod types;
+mod ops;
+mod vm;
 
 pub use trit::*;
-pub use ternary::*;
+pub use types::*;
 
 #[cfg(test)]
 mod test;

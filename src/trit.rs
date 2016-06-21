@@ -11,6 +11,10 @@ pub enum Trit {
     Pos  = 1,
 }
 
+impl Default for Trit {
+    fn default() -> Self { Trit::Zero }
+}
+
 impl From<i8> for Trit {
     fn from(n: i8) -> Trit {
         match n {
@@ -73,6 +77,18 @@ impl ops::Neg for Trit {
     }
 }
 
+impl ops::Mul for Trit {
+    type Output = Trit;
+
+    fn mul(self, rhs: Trit) -> Self::Output {
+        match self {
+            Pos => rhs,
+            Zero => Zero,
+            Neg => -rhs
+        }
+    }
+}
+
 impl ops::BitAnd for Trit {
     type Output = Trit;
 
@@ -112,14 +128,6 @@ impl Trit {
             _  => (Zero, Zero),
         }
 	}
-
-    pub fn product(self, rhs: Trit) -> Trit {
-        match self {
-            Pos => rhs,
-            Zero => Zero,
-            Neg => -rhs
-        }
-    }
 }
 
 impl fmt::Debug for Trit {
