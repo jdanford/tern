@@ -8,8 +8,8 @@ use tern::inst::Inst;
 fn main() { unsafe {
 	let mut vm = VM::new(WORD_SIZE * 2);
 
-	let dest = 0 as usize;
-	let src = 1 as usize;
+	let dest = 0;
+	let src = 1;
 
 	ternary::write_int(vm.memory, Inst::Mov as isize, TRYTE_ISIZE);
 	ternary::write_int(vm.memory.offset(TRYTE_ISIZE), dest as isize, TRYTE_ISIZE);

@@ -1,16 +1,17 @@
 use libc::malloc;
+use std::mem::transmute;
+
 use ternary;
 use trit::Trit;
 use types::*;
 use inst::Inst;
-use std::mem::transmute;
 
 const REGISTER_COUNT: usize = 48;
 
 const PC: usize = REGISTER_COUNT - 5;
 const SP: usize = REGISTER_COUNT - 4;
-const OVER: usize = REGISTER_COUNT - 3;
-const UNDER: usize = REGISTER_COUNT - 2;
+const HI: usize = REGISTER_COUNT - 3;
+const LO: usize = REGISTER_COUNT - 2;
 const ZERO: usize = REGISTER_COUNT - 1;
 
 const PC_START: usize = 0;

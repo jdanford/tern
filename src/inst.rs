@@ -11,7 +11,7 @@ pub enum Inst {
 
 	Add,   // add REG, REG, REG
 	Addi,  // addi REG, IMM
-	Mul,   // mul REG, REG, REG
+	Mul,   // mul REG, REG (writes to HI/LO)
 	Muli,  // muli REG, IMM
 
 	Not,   // not REG, REG

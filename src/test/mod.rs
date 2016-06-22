@@ -1,3 +1,3 @@
-mod ternary;
 mod trit;
+mod ternary;
 mod vm;
