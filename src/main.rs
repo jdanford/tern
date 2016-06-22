@@ -1,18 +1,11 @@
-use ternary;
-use types::*;
-use inst::Inst;
-use vm::VM;
+extern crate tern;
 
-macro_rules! ptr {
-	($e:expr) => (&$e[0] as *const _)
-}
+use tern::ternary;
+use tern::types::*;
+use tern::vm::VM;
+use tern::inst::Inst;
 
-macro_rules! mut_ptr {
-	($e:expr) => (&mut $e[0] as *mut _)
-}
-
-#[test]
-fn vm_mov() { unsafe {
+fn main() { unsafe {
 	let mut vm = VM::new(WORD_SIZE * 2);
 
 	let dest = 0 as usize;
@@ -30,7 +23,4 @@ fn vm_mov() { unsafe {
 
 	vm.init();
 	vm.step();
-
-	assert_eq!(vm.read_register_int(dest) as isize, 13);
-	assert_eq!(vm.read_register_int(src) as isize, 13);
 } }

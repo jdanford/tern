@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Write;
 use std::ops;
-use Trit::*;
+use trit::Trit::*;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(i8)]

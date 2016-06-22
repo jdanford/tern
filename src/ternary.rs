@@ -1,4 +1,4 @@
-use std::fmt;
+use std::io;
 use std::mem::transmute;
 use std::slice::from_raw_parts;
 use trit::Trit;
@@ -26,15 +26,19 @@ pub unsafe fn with_bytes<F: Fn(&[u8])>(trits: *const Trit, len: isize, f: F) {
     f(bytes);
 }
 
-pub unsafe fn write_str(dest: *mut Trit, s: &str, len: isize) {
+pub unsafe fn write_str(dest: *mut Trit, s: &str) {
     copy_from_iter(dest, s.bytes().rev().map(Trit::from))
 }
 
-pub unsafe fn print<T: Into<Trit>, W: fmt::Write>(trits: *const Trit, mut writer: W, len: isize) {
+pub unsafe fn print<W: io::Write>(trits: *const Trit, mut writer: W, len: isize) {
     for i in (0..len).rev() {
         let trit = *trits.offset(i);
-        writer.write_char(trit.into());
+        let c: char = trit.into();
+        let container = [c as u8; 1];
+        let _ = writer.write(&container);
     }
+
+    let _ = writer.write(b"\n");
 }
 
 pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
