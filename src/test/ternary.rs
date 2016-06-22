@@ -5,7 +5,7 @@ use trit::Trit;
 #[test]
 fn ternary_write_trits() {
 	let mut trits = [Trit::Zero; 6];
-	ternary::write_trits(&mut trits, iter::repeat(Trit::Pos).take(6));
+	ternary::write_trits_iter(&mut trits, iter::repeat(Trit::Pos).take(6));
 	assert_eq!(trits, [Trit::Pos; 6]);
 }
 
@@ -14,6 +14,13 @@ fn ternary_write_str() {
 	let mut trits = [Trit::Zero; 6];
 	ternary::write_str(&mut trits, "1T00T1");
 	assert_eq!(trits, [Trit::Pos, Trit::Neg, Trit::Zero, Trit::Zero, Trit::Neg, Trit::Pos]);
+}
+
+#[test]
+fn ternary_write_int() {
+	let mut trits = [Trit::Zero; 6];
+	ternary::write_int(&mut trits, 20, 6);
+	assert_eq!(trits, [Trit::Neg, Trit::Pos, Trit::Neg, Trit::Pos, Trit::Zero, Trit::Zero]);
 }
 
 #[test]
@@ -90,7 +97,7 @@ fn ternary_add() {
 	let mut c = [Trit::Zero; 6];
 	ternary::write_str(&mut c, "T100T1");
 
-	ternary::add(&mut a, b.iter().cloned());
+	ternary::add1(&mut a, &b);
 	assert_eq!(a, c);
 }
 

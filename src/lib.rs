@@ -1,9 +1,15 @@
+#![feature(libc)]
+
 extern crate core;
+extern crate libc;
+
+#[macro_use]
+extern crate lazy_static;
 
 mod trit;
 mod ternary;
 mod types;
-mod ops;
+mod inst;
 mod vm;
 
 pub use trit::*;

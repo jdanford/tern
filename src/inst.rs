@@ -1,9 +1,7 @@
-use types::*;
-use vm::*;
-
+#[allow(dead_code)]
 #[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-enum Inst {
+pub enum Inst {
 	Mov,   // mov REG, REG
 	Movw,  // movi REG ... WORD
 	Ld,    // ld REG, ADDR

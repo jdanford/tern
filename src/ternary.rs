@@ -1,37 +1,75 @@
 use std::fmt;
-use std::fmt::Write;
+use std::mem::transmute;
+use std::slice::from_raw_parts;
 use trit::Trit;
 
-pub fn clear(trits: &mut [Trit], len: usize) {
+pub unsafe fn clear(trits: *mut Trit, len: isize) {
     for i in 0..len {
-        trits[i] = Trit::Zero;
+        *trits.offset(i) = Trit::Zero;
     }
 }
 
-pub fn write_trits<I>(trits: &mut [Trit], rhs: I) where I: IntoIterator<Item=Trit> {
-    for (i, b) in rhs.into_iter().enumerate() {
-        trits[i] = b;
+pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
+    for i in 0..len {
+        *dest.offset(i) = *src.offset(i);
     }
 }
 
-pub fn write_str(trits: &mut [Trit], s: &str) {
-    write_trits(trits, s.bytes().rev().map(Trit::from))
+pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iter: I) where I: IntoIterator<Item=Trit> {
+    for (i, trit) in iter.into_iter().enumerate() {
+        *dest.offset(i as isize) = trit;
+    }
 }
 
-pub fn read_int(trits: &[Trit], len: usize) -> isize {
-    let mut n = trits[len - 1] as isize;
+pub unsafe fn with_bytes<F: Fn(&[u8])>(trits: *const Trit, len: isize, f: F) {
+    let bytes = from_raw_parts(transmute(trits), len as usize);
+    f(bytes);
+}
+
+pub unsafe fn write_str(dest: *mut Trit, s: &str, len: isize) {
+    copy_from_iter(dest, s.bytes().rev().map(Trit::from))
+}
+
+pub unsafe fn print<T: Into<Trit>, W: fmt::Write>(trits: *const Trit, mut writer: W, len: isize) {
+    for i in (0..len).rev() {
+        let trit = *trits.offset(i);
+        writer.write_char(trit.into());
+    }
+}
+
+pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
+    let negative = n < 0;
+    let mut n = n.abs();
+
+    for i in 0..len {
+        let trit = match n % 3 {
+            1 => Trit::Pos,
+            0 => Trit::Zero,
+            _ => {
+                n += 1;
+                Trit::Neg
+            }
+        };
+
+        *trits.offset(i) = if negative { -trit } else { trit };
+        n /= 3;
+    }
+}
+
+pub unsafe fn read_int(trits: *const Trit, len: isize) -> isize {
+    let mut n = *trits.offset(len - 1) as isize;
 
     for i in (0..len - 1).rev() {
-        let t = trits[i] as isize;
+        let t = *trits.offset(i) as isize;
         n = n * 3 + t
     }
 
     n
 }
 
-pub fn get_lst(trits: &[Trit], len: usize) -> Trit {
+pub unsafe fn get_lst(trits: *const Trit, len: isize) -> Trit {
     for i in 0..len - 1 {
-        let trit = trits[i];
+        let trit = *trits.offset(i);
         if trit != Trit::Zero {
             return trit;
         }
@@ -40,9 +78,9 @@ pub fn get_lst(trits: &[Trit], len: usize) -> Trit {
     Trit::Zero
 }
 
-pub fn get_mst(trits: &[Trit], len: usize) -> Trit {
+pub unsafe fn get_mst(trits: *const Trit, len: isize) -> Trit {
     for i in (0..len - 1).rev() {
-        let trit = trits[i];
+        let trit = *trits.offset(i);
         if trit != Trit::Zero {
             return trit;
         }
@@ -51,42 +89,44 @@ pub fn get_mst(trits: &[Trit], len: usize) -> Trit {
     Trit::Zero
 }
 
-pub fn fmt(trits: &[Trit], f: &mut fmt::Formatter) {
-    for i in (0..trits.len()).rev() {
-        let trit = trits[i];
-        let _ = f.write_char(trit.into());
+pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F) where F: Fn(Trit) -> Trit {
+    for i in 0..len {
+        *trits.offset(i) = f(*trits.offset(i));
     }
 }
 
-pub fn mutate<F>(trits: &mut [Trit], f: F) where F: Fn(Trit) -> Trit {
-    for i in 0..trits.len() {
-        trits[i] = f(trits[i]);
-    }
-}
-
-pub fn mutate2<I, F>(trits: &mut [Trit], rhs: I, f: F) where I: IntoIterator<Item=Trit>, F: Fn(Trit, Trit) -> Trit {
-    for (i, t) in rhs.into_iter().enumerate() {
-        trits[i] = f(trits[i], t);
-    }
-}
-
-pub fn add<I: IntoIterator<Item=Trit>>(trits: &mut [Trit], rhs: I) -> Trit {
+pub unsafe fn addmul(dest: *mut Trit, rhs: *const Trit, t: Trit, len: isize) -> Trit {
     let mut carry = Trit::Zero;
 
-    for (i, r) in rhs.into_iter().enumerate() {
-        let (trit_i, carry_i) = trits[i].sum_with_carry(r, carry);
-        trits[i] = trit_i;
+    for i in 0..len {
+        let l = *dest.offset(i);
+        let r = *rhs.offset(i);
+        let (trit_i, carry_i) = l.sum_with_carry(r * t, carry);
+        *dest.offset(i) = trit_i;
         carry = carry_i;
     }
 
     carry
 }
 
-pub fn multiply(trits: &mut [Trit], lhs: &[Trit], rhs: &[Trit]) {
-    let mut carry;
-    let len = lhs.len();
+pub unsafe fn add(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
+    let mut carry = Trit::Zero;
+
     for i in 0..len {
-        carry = add(&mut trits[i..], lhs.into_iter().map(|&l| l * rhs[i]));
-        trits[i + len] = carry;
+        let l = *lhs.offset(i);
+        let r = *rhs.offset(i);
+        let (trit_i, carry_i) = l.sum_with_carry(r, carry);
+        *dest.offset(i) = trit_i;
+        carry = carry_i;
+    }
+
+    carry
+}
+
+pub unsafe fn multiply(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize) {
+    let mut carry;
+    for i in 0..len {
+        carry = addmul(dest.offset(i), lhs, *rhs.offset(i), len);
+        *dest.offset(i + len) = carry;
     }
 }
