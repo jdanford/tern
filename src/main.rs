@@ -3,7 +3,7 @@ extern crate tern;
 use tern::ternary;
 use tern::types::*;
 use tern::opcodes::Opcode;
-use tern::registers::*;
+use tern::registers::Register::*;
 use tern::vm::VM;
 
 fn main() {

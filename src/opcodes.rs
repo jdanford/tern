@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 #[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
@@ -23,7 +22,7 @@ pub enum Opcode {
 	Shfi,  // shfi REG, IMM
 
 	Cmp,   // cmp REG, REG, REG
-	Jmp,   // jmp ADDR
+	Jmp,   // jmp ... ADDR
 	Jr,    // jr REG
 	JT,    // jT REG, OFF
 	J0,    // j0 REG, OFF
@@ -32,7 +31,7 @@ pub enum Opcode {
 	JT1,   // jT1 REG, OFF
 	J01,   // j01 REG, OFF
 
-	Call,  // call ADDR
+	Call,  // call ... ADDR
 	Callr, // call REG
 	Ret,   // ret
 	Sys,   // sys

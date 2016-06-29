@@ -83,10 +83,10 @@ pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item
 
 pub fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
     unsafe { (
-        read_int(trits.offset(0 * TRYTE_ISIZE), TRYTE_ISIZE),
-        read_int(trits.offset(1 * TRYTE_ISIZE), TRYTE_ISIZE),
-        read_int(trits.offset(2 * TRYTE_ISIZE), TRYTE_ISIZE),
-        read_int(trits.offset(3 * TRYTE_ISIZE), TRYTE_ISIZE),
+        read_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
+        read_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
+        read_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
+        read_int(tryte_offset!(trits, 3), TRYTE_ISIZE),
     ) }
 }
 

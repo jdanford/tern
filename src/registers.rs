@@ -1,26 +1,30 @@
 pub const REGISTER_COUNT: usize = 24;
 
-pub const ZERO: usize = 0;
-pub const RA: usize = 1;
-pub const LO: usize = 2;
-pub const HI: usize = 3;
-pub const SP: usize = 4;
-pub const FP: usize = 5;
-pub const A0: usize = 6;
-pub const A1: usize = 7;
-pub const A2: usize = 8;
-pub const A3: usize = 9;
-pub const A4: usize = 10;
-pub const A5: usize = 11;
-pub const T0: usize = 12;
-pub const T1: usize = 13;
-pub const T2: usize = 14;
-pub const T3: usize = 15;
-pub const T4: usize = 16;
-pub const T5: usize = 17;
-pub const S0: usize = 18;
-pub const S1: usize = 19;
-pub const S2: usize = 20;
-pub const S3: usize = 21;
-pub const S4: usize = 22;
-pub const S5: usize = 23;
+#[repr(i16)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum Register {
+	ZERO = 0,
+	RA = 1,
+	LO = 2,
+	HI = 3,
+	SP = 4,
+	FP = 5,
+	A0 = 6,
+	A1 = 7,
+	A2 = 8,
+	A3 = 9,
+	A4 = 10,
+	A5 = 11,
+	T0 = 12,
+	T1 = 13,
+	T2 = 14,
+	T3 = 15,
+	T4 = 16,
+	T5 = 17,
+	S0 = 18,
+	S1 = 19,
+	S2 = 20,
+	S3 = 21,
+	S4 = 22,
+	S5 = 23,
+}
