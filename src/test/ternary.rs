@@ -2,14 +2,6 @@ use std::iter;
 use ternary;
 use trit::Trit;
 
-macro_rules! ptr {
-	($e:expr) => (&$e[0] as *const _)
-}
-
-macro_rules! mut_ptr {
-	($e:expr) => (&mut $e[0] as *mut _)
-}
-
 #[test]
 fn ternary_write_trits() { unsafe {
 	let mut trits = [Trit::Zero; 6];

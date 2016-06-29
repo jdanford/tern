@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 #[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Inst {
+pub enum Opcode {
 	Mov,   // mov REG, REG
 	Movw,  // movi REG ... WORD
 	Ld,    // ld REG, ADDR

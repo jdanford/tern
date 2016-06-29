@@ -2,11 +2,20 @@ use std::io;
 use std::mem::transmute;
 use std::slice::from_raw_parts;
 use trit::Trit;
+use types::*;
 
 pub unsafe fn clear(trits: *mut Trit, len: isize) {
     for i in 0..len {
         *trits.offset(i) = Trit::Zero;
     }
+}
+
+pub unsafe fn get_trit(trits: *mut Trit, i: isize) -> Trit {
+    *trits.offset(i)
+}
+
+pub unsafe fn set_trit(trits: *mut Trit, i: isize, trit: Trit) {
+    *trits.offset(i) = trit;
 }
 
 pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
@@ -15,8 +24,8 @@ pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
     }
 }
 
-pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iter: I) where I: IntoIterator<Item=Trit> {
-    for (i, trit) in iter.into_iter().enumerate() {
+pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I) where I: IntoIterator<Item=Trit> {
+    for (i, trit) in iterable.into_iter().enumerate() {
         *dest.offset(i as isize) = trit;
     }
 }
@@ -57,6 +66,15 @@ pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
 
         *trits.offset(i) = if negative { -trit } else { trit };
         n /= 3;
+    }
+}
+
+pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
+    for (i, tryte) in iterable.into_iter().enumerate() {
+        let offset = TRYTE_ISIZE * (i as isize);
+        unsafe {
+            write_int(trits.offset(offset), tryte, TRYTE_ISIZE);
+        }
     }
 }
 

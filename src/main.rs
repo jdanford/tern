@@ -3,7 +3,7 @@ extern crate tern;
 use tern::ternary;
 use tern::types::*;
 use tern::vm::VM;
-use tern::inst::Inst;
+use tern::opcode::Opcode;
 
 fn main() { unsafe {
 	let mut vm = VM::new(WORD_SIZE * 2);
@@ -11,7 +11,7 @@ fn main() { unsafe {
 	let dest = 0;
 	let src = 1;
 
-	ternary::write_int(vm.memory, Inst::Mov as isize, TRYTE_ISIZE);
+	ternary::write_int(vm.memory, Opcode::Mov as isize, TRYTE_ISIZE);
 	ternary::write_int(vm.memory.offset(TRYTE_ISIZE), dest as isize, TRYTE_ISIZE);
 	ternary::write_int(vm.memory.offset(TRYTE_ISIZE * 2), src as isize, TRYTE_ISIZE);
 
