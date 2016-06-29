@@ -4,67 +4,48 @@ use std::mem::transmute;
 use ternary;
 use trit::Trit;
 use types::*;
-
-const REGISTER_COUNT: usize = 48;
-
-const PC: usize = REGISTER_COUNT - 5;
-const SP: usize = REGISTER_COUNT - 4;
-const HI: usize = REGISTER_COUNT - 3;
-const LO: usize = REGISTER_COUNT - 2;
-const ZERO: usize = REGISTER_COUNT - 1;
+use opcodes::Opcode;
+use registers::*;
 
 const PC_START: usize = 0;
 
 pub struct VM {
 	pub registers: [Word; REGISTER_COUNT],
 	pub memory: *mut Trit,
+	pub pc: usize,
 	pub running: bool
 }
 
 impl VM {
 	pub fn new(memory_size: usize) -> VM {
+		let registers = [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT];
 		let memory = unsafe { transmute(malloc(memory_size)) };
 
 		VM {
-			registers: [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT],
+			registers: registers,
 			memory: memory,
+			pc: PC_START,
 			running: false
 		}
 	}
 
-	pub unsafe fn write_register(&mut self, i: usize, src: *const Trit) {
-		ternary::copy(mut_ptr!(self.registers[i]), src, WORD_ISIZE);
+	fn src(&self, i: usize) -> *const Trit {
+		ptr!(self.registers[i])
 	}
 
-	pub fn write_register_int(&mut self, i: usize, value: isize) {
-		unsafe { ternary::write_int(mut_ptr!(self.registers[i]), value, WORD_ISIZE); }
-	}
-
-	pub fn print_register(&self, i: usize) {
-		print!("${:02} = ", i);
-
-		for trit in self.registers[i].into_iter().rev() {
-			print!("{}", trit)
-		}
-
-		println!("")
-	}
-
-	pub fn print_registers(&self) {
-		for i in 0..REGISTER_COUNT {
-			self.print_register(i);
-		}
+	fn dest(&mut self, i: usize) -> *mut Trit {
+		mut_ptr!(self.registers[i])
 	}
 
 	pub fn read_register_int(&mut self, i: usize) -> isize {
-		unsafe { ternary::read_int(mut_ptr!(self.registers[i]), WORD_ISIZE) }
+		unsafe { ternary::read_int(self.dest(i), WORD_ISIZE) }
+	}
+
+	pub fn write_register_int(&mut self, i: usize, value: isize) {
+		unsafe { ternary::write_int(self.dest(i), value, WORD_ISIZE); }
 	}
 
 	pub fn init(&mut self) {
-		unsafe {
-			ternary::write_int(mut_ptr!(self.registers[PC]), PC_START as isize, WORD_ISIZE);
-		}
-
 		self.running = true;
 	}
 
@@ -76,27 +57,19 @@ impl VM {
 		}
 	}
 
-	pub unsafe fn move_pc(&mut self, offset: isize) {
-		ternary::write_int(self.dest(ZERO), offset, WORD_ISIZE);
-		ternary::addmul(self.dest(PC), self.src(ZERO), Trit::Pos, WORD_ISIZE);
-		self.clear_zero();
-	}
-
 	pub fn clear_zero(&mut self) {
 		unsafe { ternary::clear(self.dest(ZERO), WORD_ISIZE); }
 	}
 
 	pub fn next_inst(&mut self) -> Word {
-		let pc = unsafe { ternary::read_int(self.src(PC), WORD_ISIZE) };
-		if pc < 0 {
-			panic!("PC is negative!")
-		}
-
 		let mut inst = [Trit::Zero; WORD_SIZE];
+
 		unsafe {
-			ternary::copy(mut_ptr!(inst), self.memory.offset(pc as isize), WORD_ISIZE);
+			let location = self.memory.offset(self.pc as isize);
+			ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
 		}
 
+		self.pc += WORD_SIZE;
 		inst
 	}
 
@@ -107,33 +80,34 @@ impl VM {
 			transmute(raw_opcode)
 		};
 
-		use opcode::Opcode::*;
 		unsafe { match opcode {
-			Mov => {
+			Opcode::Mov => {
 				let dest = ternary::read_int(tryte_ptr!(inst, 1), TRYTE_ISIZE) as usize;
 				let src = ternary::read_int(tryte_ptr!(inst, 2), TRYTE_ISIZE) as usize;
 				self.mov(dest, src);
 			}
 
-			Add => {
+			Opcode::Add => {
 				let dest = ternary::read_int(tryte_ptr!(inst, 1), TRYTE_ISIZE) as usize;
 				let lhs = ternary::read_int(tryte_ptr!(inst, 2), TRYTE_ISIZE) as usize;
 				let rhs = ternary::read_int(tryte_ptr!(inst, 3), TRYTE_ISIZE) as usize;
 				self.add(dest, lhs, rhs);
 			}
 
+			Opcode::Mul => {
+				let lhs = ternary::read_int(tryte_ptr!(inst, 1), TRYTE_ISIZE) as usize;
+				let rhs = ternary::read_int(tryte_ptr!(inst, 2), TRYTE_ISIZE) as usize;
+				self.mul(lhs, rhs);
+			}
+
+			Opcode::Halt => {
+				self.running = false;
+			}
+
 			_ => {}
 		} }
 
 		self.clear_zero();
-	}
-
-	fn src(&self, index: usize) -> *const Trit {
-		ptr!(self.registers[index])
-	}
-
-	fn dest(&mut self, index: usize) -> *mut Trit {
-		mut_ptr!(self.registers[index])
 	}
 
 	fn mov(&mut self, i_dest: usize, i_src: usize) {
@@ -148,9 +122,21 @@ impl VM {
 		let rhs = self.src(i_rhs);
 
 		unsafe {
+			ternary::clear(dest, WORD_ISIZE);
 			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
 			ternary::clear(self.dest(HI), WORD_ISIZE);
 			ternary::set_trit(self.dest(HI), 0, carry);
+		}
+	}
+
+	fn mul(&mut self, i_lhs: usize, i_rhs: usize) {
+		let lhs = self.src(i_lhs);
+		let rhs = self.src(i_rhs);
+
+		unsafe {
+			ternary::clear(self.dest(LO), WORD_ISIZE);
+			ternary::clear(self.dest(HI), WORD_ISIZE);
+			ternary::multiply(self.dest(LO), lhs, rhs, WORD_ISIZE);
 		}
 	}
 }

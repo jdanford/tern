@@ -36,4 +36,6 @@ pub enum Opcode {
 	Callr, // call REG
 	Ret,   // ret
 	Sys,   // sys
+
+	Halt,  // halt
 }

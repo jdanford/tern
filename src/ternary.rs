@@ -1,6 +1,4 @@
 use std::io;
-use std::mem::transmute;
-use std::slice::from_raw_parts;
 use trit::Trit;
 use types::*;
 
@@ -28,11 +26,6 @@ pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I) where I: IntoItera
     for (i, trit) in iterable.into_iter().enumerate() {
         *dest.offset(i as isize) = trit;
     }
-}
-
-pub unsafe fn with_bytes<F: Fn(&[u8])>(trits: *const Trit, len: isize, f: F) {
-    let bytes = from_raw_parts(transmute(trits), len as usize);
-    f(bytes);
 }
 
 pub unsafe fn write_str(dest: *mut Trit, s: &str) {
@@ -72,9 +65,7 @@ pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
 pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
     for (i, tryte) in iterable.into_iter().enumerate() {
         let offset = TRYTE_ISIZE * (i as isize);
-        unsafe {
-            write_int(trits.offset(offset), tryte, TRYTE_ISIZE);
-        }
+        unsafe { write_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
     }
 }
 

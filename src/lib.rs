@@ -18,7 +18,8 @@ macro_rules! tryte_ptr {
 pub mod trit;
 pub mod ternary;
 pub mod types;
-pub mod opcode;
+pub mod opcodes;
+pub mod registers;
 pub mod vm;
 
 #[cfg(test)]
