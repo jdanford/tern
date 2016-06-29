@@ -2,9 +2,9 @@ extern crate tern;
 
 use tern::ternary;
 use tern::types::*;
-use tern::vm::VM;
 use tern::opcodes::Opcode;
 use tern::registers::*;
+use tern::vm::VM;
 
 fn main() {
 	let mut vm = VM::new(WORD_SIZE * 2);

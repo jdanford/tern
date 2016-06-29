@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Write;
 use std::ops;
+
 use trit::Trit::*;
 
 #[derive(Clone, Copy, Eq, PartialEq)]

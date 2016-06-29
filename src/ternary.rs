@@ -1,4 +1,5 @@
 use std::io;
+
 use trit::Trit;
 use types::*;
 
@@ -62,13 +63,6 @@ pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
     }
 }
 
-pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
-    for (i, tryte) in iterable.into_iter().enumerate() {
-        let offset = TRYTE_ISIZE * (i as isize);
-        unsafe { write_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
-    }
-}
-
 pub unsafe fn read_int(trits: *const Trit, len: isize) -> isize {
     let mut n = *trits.offset(len - 1) as isize;
 
@@ -78,6 +72,22 @@ pub unsafe fn read_int(trits: *const Trit, len: isize) -> isize {
     }
 
     n
+}
+
+pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
+    for (i, tryte) in iterable.into_iter().enumerate() {
+        let offset = TRYTE_ISIZE * (i as isize);
+        unsafe { write_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
+    }
+}
+
+pub fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
+    unsafe { (
+        read_int(trits.offset(0 * TRYTE_ISIZE), TRYTE_ISIZE),
+        read_int(trits.offset(1 * TRYTE_ISIZE), TRYTE_ISIZE),
+        read_int(trits.offset(2 * TRYTE_ISIZE), TRYTE_ISIZE),
+        read_int(trits.offset(3 * TRYTE_ISIZE), TRYTE_ISIZE),
+    ) }
 }
 
 pub unsafe fn get_lst(trits: *const Trit, len: isize) -> Trit {
