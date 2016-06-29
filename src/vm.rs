@@ -92,6 +92,15 @@ impl VM {
 				self.mul(r1, r2);
 			}
 
+			Opcode::Call => {
+				let raw_addr = self.next_inst();
+
+				unsafe {
+					ternary::write_int(self.dest(Register::RA), self.pc as isize, WORD_ISIZE);
+					self.pc = ternary::read_int(ptr!(raw_addr), WORD_ISIZE) as usize;
+				}
+			}
+
 			Opcode::Halt => {
 				self.running = false;
 			}
