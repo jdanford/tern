@@ -73,6 +73,11 @@ impl VM {
 		inst
 	}
 
+	fn next_inst_int(&mut self) -> isize {
+		let word = self.next_inst_word();
+		unsafe { ternary::read_int(ptr!(word), WORD_ISIZE) }
+	}
+
 	pub fn step(&mut self) {
 		let inst = self.next_inst_word();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
@@ -90,6 +95,20 @@ impl VM {
 
 			Opcode::Mul => {
 				self.mul(r1, r2);
+			}
+
+			Opcode::Jmp => {
+				let addr = self.next_inst_int() as usize;
+				self.jmp(addr);
+			}
+
+			Opcode::Call => {
+				let addr = self.next_inst_int() as usize;
+				self.call(addr);
+			}
+
+			Opcode::Ret => {
+				self.ret();
 			}
 
 			Opcode::Halt => {
@@ -130,5 +149,20 @@ impl VM {
 			self.clear(Register::HI);
 			ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
 		}
+	}
+
+	fn jmp(&mut self, addr: usize) {
+		self.pc = addr;
+	}
+
+	fn call(&mut self, addr: usize) {
+		let pc = self.pc as isize;
+		self.write(Register::RA, pc);
+		self.jmp(addr);
+	}
+
+	fn ret(&mut self) {
+		let addr = self.read(Register::RA) as usize;
+		self.jmp(addr);
 	}
 }
