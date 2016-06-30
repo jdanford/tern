@@ -16,13 +16,13 @@ fn vm_mov() {
 		Opcode::Halt as isize
 	]);
 
-	vm.write_register_int(dest, 40);
-	vm.write_register_int(src, 13);
+	vm.write(dest, 40);
+	vm.write(src, 13);
 
 	vm.run();
 
-	assert_eq!(vm.read_register_int(dest), 13);
-	assert_eq!(vm.read_register_int(src), 13);
+	assert_eq!(vm.read(dest), 13);
+	assert_eq!(vm.read(src), 13);
 }
 
 #[test]
@@ -38,15 +38,15 @@ fn vm_add() {
 		Opcode::Halt as isize
 	]);
 
-	vm.write_register_int(dest, 0);
-	vm.write_register_int(lhs, 7);
-	vm.write_register_int(rhs, -2);
+	vm.write(dest, 0);
+	vm.write(lhs, 7);
+	vm.write(rhs, -2);
 
 	vm.run();
 
-	assert_eq!(vm.read_register_int(dest), 5);
-	assert_eq!(vm.read_register_int(lhs), 7);
-	assert_eq!(vm.read_register_int(rhs), -2);
+	assert_eq!(vm.read(dest), 5);
+	assert_eq!(vm.read(lhs), 7);
+	assert_eq!(vm.read(rhs), -2);
 }
 
 #[test]
@@ -61,14 +61,14 @@ fn vm_mul() {
 		Opcode::Halt as isize
 	]);
 
-	vm.write_register_int(Register::HI, 999);
-	vm.write_register_int(lhs, -15);
-	vm.write_register_int(rhs, -3);
+	vm.write(Register::HI, 999);
+	vm.write(lhs, -15);
+	vm.write(rhs, -3);
 
 	vm.run();
 
-	assert_eq!(vm.read_register_int(Register::LO), 45);
-	assert_eq!(vm.read_register_int(Register::HI), 0);
-	assert_eq!(vm.read_register_int(lhs), -15);
-	assert_eq!(vm.read_register_int(rhs), -3);
+	assert_eq!(vm.read(Register::LO), 45);
+	assert_eq!(vm.read(Register::HI), 0);
+	assert_eq!(vm.read(lhs), -15);
+	assert_eq!(vm.read(rhs), -3);
 }

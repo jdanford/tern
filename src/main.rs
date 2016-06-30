@@ -17,19 +17,19 @@ fn main() {
 		Opcode::Halt as isize
 	]);
 
-	vm.write_register_int(HI, 999);
-	vm.write_register_int(lhs, -15);
-	vm.write_register_int(rhs, -3);
+	vm.write(HI, 999);
+	vm.write(lhs, -15);
+	vm.write(rhs, -3);
 
-	assert_eq!(vm.read_register_int(LO), 0);
-	assert_eq!(vm.read_register_int(HI), 999);
-	assert_eq!(vm.read_register_int(lhs), -15);
-	assert_eq!(vm.read_register_int(rhs), -3);
+	assert_eq!(vm.read(LO), 0);
+	assert_eq!(vm.read(HI), 999);
+	assert_eq!(vm.read(lhs), -15);
+	assert_eq!(vm.read(rhs), -3);
 
 	vm.run();
 
-	assert_eq!(vm.read_register_int(LO), 45);
-	assert_eq!(vm.read_register_int(HI), 0);
-	assert_eq!(vm.read_register_int(lhs), -15);
-	assert_eq!(vm.read_register_int(rhs), -3);
+	assert_eq!(vm.read(LO), 45);
+	assert_eq!(vm.read(HI), 0);
+	assert_eq!(vm.read(lhs), -15);
+	assert_eq!(vm.read(rhs), -3);
 }

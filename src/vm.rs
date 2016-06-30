@@ -37,12 +37,16 @@ impl VM {
 		mut_ptr!(self.registers[r as usize])
 	}
 
-	pub fn read_register_int(&mut self, r: Register) -> isize {
-		unsafe { ternary::read_int(self.dest(r), WORD_ISIZE) }
+	pub fn read(&mut self, r: Register) -> isize {
+		unsafe { ternary::read_int(self.src(r), WORD_ISIZE) }
 	}
 
-	pub fn write_register_int(&mut self, r: Register, value: isize) {
+	pub fn write(&mut self, r: Register, value: isize) {
 		unsafe { ternary::write_int(self.dest(r), value, WORD_ISIZE); }
+	}
+
+	pub fn clear(&mut self, r: Register) {
+		unsafe { ternary::clear(self.dest(r), WORD_ISIZE) }
 	}
 
 	pub fn init(&mut self) {
@@ -57,11 +61,7 @@ impl VM {
 		}
 	}
 
-	fn clear_zero(&mut self) {
-		unsafe { ternary::clear(self.dest(Register::ZERO), WORD_ISIZE); }
-	}
-
-	fn next_inst(&mut self) -> Word {
+	fn next_inst_word(&mut self) -> Word {
 		let mut inst = [Trit::Zero; WORD_SIZE];
 
 		unsafe {
@@ -74,7 +74,7 @@ impl VM {
 	}
 
 	pub fn step(&mut self) {
-		let inst = self.next_inst();
+		let inst = self.next_inst_word();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
 		let opcode = unsafe { transmute(t0 as i16) };
 		let (r1, r2, r3) = unsafe { (transmute(t1 as i16), transmute(t2 as i16), transmute(t3 as i16)) };
@@ -92,15 +92,6 @@ impl VM {
 				self.mul(r1, r2);
 			}
 
-			Opcode::Call => {
-				let raw_addr = self.next_inst();
-
-				unsafe {
-					ternary::write_int(self.dest(Register::RA), self.pc as isize, WORD_ISIZE);
-					self.pc = ternary::read_int(ptr!(raw_addr), WORD_ISIZE) as usize;
-				}
-			}
-
 			Opcode::Halt => {
 				self.running = false;
 			}
@@ -108,7 +99,7 @@ impl VM {
 			_ => {}
 		}
 
-		self.clear_zero();
+		self.clear(Register::ZERO);
 	}
 
 	fn mov(&mut self, r_dest: Register, r_src: Register) {
@@ -123,9 +114,9 @@ impl VM {
 		let rhs = self.src(r_rhs);
 
 		unsafe {
-			ternary::clear(dest, WORD_ISIZE);
+			self.clear(r_dest);
 			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
-			ternary::clear(self.dest(Register::HI), WORD_ISIZE);
+			self.clear(Register::HI);
 			ternary::set_trit(self.dest(Register::HI), 0, carry);
 		}
 	}
@@ -135,8 +126,8 @@ impl VM {
 		let rhs = self.src(r_rhs);
 
 		unsafe {
-			ternary::clear(self.dest(Register::LO), WORD_ISIZE);
-			ternary::clear(self.dest(Register::HI), WORD_ISIZE);
+			self.clear(Register::LO);
+			self.clear(Register::HI);
 			ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
 		}
 	}

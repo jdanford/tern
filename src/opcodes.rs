@@ -32,7 +32,7 @@ pub enum Opcode {
 	J01,   // j01 REG, OFF
 
 	Call,  // call ... ADDR
-	Callr, // call REG
+	Callr, // callr REG
 	Ret,   // ret
 	Sys,   // sys
 
