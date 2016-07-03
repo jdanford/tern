@@ -1,12 +1,18 @@
+use std::mem::transmute;
+
 #[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
 	Mov,   // mov REG, REG
-	Movw,  // movi REG ... WORD
-	Ld,    // ld REG, ADDR
-	Ldr,   // ldr REG, REG
-	St,    // st ADDR, REG
-	Str,   // str REG, REG
+	Movw,  // movw REG ... WORD
+
+	Lb,    // lb REG, REG, OFF
+	Lh,    // lh REG, REG, OFF
+	Lw,    // lw REG, REG, OFF
+
+	Sb,    // sb REG, REG, OFF
+	Sh,    // sh REG, REG, OFF
+	Sw,    // sw REG, REG, OFF
 
 	Add,   // add REG, REG, REG
 	Addi,  // addi REG, IMM
@@ -34,7 +40,18 @@ pub enum Opcode {
 	Call,  // call ... ADDR
 	Callr, // callr REG
 	Ret,   // ret
-	Sys,   // sys
 
+	Sys,   // sys
+	Brk,   // brk
 	Halt,  // halt
+}
+
+impl From<isize> for Opcode {
+	fn from(n: isize) -> Opcode {
+		// if !Opcode::index_is_valid(n) {
+		// 	panic!()
+		// }
+
+		unsafe { transmute(n as i16) }
+	}
 }

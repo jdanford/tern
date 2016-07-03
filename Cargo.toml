@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Jordan Danford <jordandanford@gmail.com>"]
 
 [dependencies]
+combine = "*"

@@ -1,35 +1,52 @@
 extern crate tern;
 
+use std::env;
+use std::io;
+
+use tern::trit::Trit;
 use tern::ternary;
 use tern::types::*;
-use tern::opcodes::Opcode;
-use tern::registers::Register::*;
-use tern::vm::VM;
+
+macro_rules! ptr {
+	($e:expr) => (&$e[0] as *const _)
+}
+
+macro_rules! mut_ptr {
+	($e:expr) => (&mut $e[0] as *mut _)
+}
 
 fn main() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let arg = env::args().skip(1).next().unwrap_or_default();
+	let is_ternary_mode = arg == "--ternary";
 
-	let lhs = A0;
-	let rhs = A1;
+	loop {
+		let mut trits = [Trit::Zero; WORD_SIZE];
+		let mut input = String::new();
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Mul as isize, lhs as isize, rhs as isize, 0,
-		Opcode::Halt as isize
-	]);
+		match io::stdin().read_line(&mut input) {
+			Ok(_) => {
+				let s = input.trim();
+				if s.len() == 0 {
+					break;
+				}
 
-	vm.write(HI, 999);
-	vm.write(lhs, -15);
-	vm.write(rhs, -3);
+				if is_ternary_mode {
+					unsafe {
+						ternary::write_str(mut_ptr!(trits), &s[..]);
+						println!("=> {}", ternary::read_int(ptr!(trits), WORD_ISIZE));
+					}
+				} else {
+					let n = s.parse::<isize>().unwrap();
 
-	assert_eq!(vm.read(LO), 0);
-	assert_eq!(vm.read(HI), 999);
-	assert_eq!(vm.read(lhs), -15);
-	assert_eq!(vm.read(rhs), -3);
+					unsafe {
+						ternary::write_int(mut_ptr!(trits), n, WORD_ISIZE);
+						print!("=> ");
+						ternary::print(ptr!(trits), io::stdout(), WORD_ISIZE);
+					}
+				}
+			}
 
-	vm.run();
-
-	assert_eq!(vm.read(LO), 45);
-	assert_eq!(vm.read(HI), 0);
-	assert_eq!(vm.read(lhs), -15);
-	assert_eq!(vm.read(rhs), -3);
+			Err(error) => println!("error: {}", error),
+		}
+	}
 }

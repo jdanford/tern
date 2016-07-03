@@ -2,6 +2,7 @@
 
 extern crate core;
 extern crate libc;
+extern crate combine;
 
 macro_rules! ptr {
 	($e:expr) => (&$e[0] as *const _)
@@ -25,6 +26,7 @@ pub mod types;
 pub mod opcodes;
 pub mod registers;
 pub mod vm;
+pub mod parser;
 
 #[cfg(test)]
 mod test;

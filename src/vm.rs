@@ -81,8 +81,8 @@ impl VM {
 	pub fn step(&mut self) {
 		let inst = self.next_inst_word();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
-		let opcode = unsafe { transmute(t0 as i16) };
-		let (r1, r2, r3) = unsafe { (transmute(t1 as i16), transmute(t2 as i16), transmute(t3 as i16)) };
+		let opcode = Opcode::from(t0);
+		let (r1, r2, r3) = (Register::from(t1), Register::from(t2), Register::from(t3));
 
 		match opcode {
 			Opcode::Mov => {
