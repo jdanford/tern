@@ -7,12 +7,12 @@ use types::*;
 use opcodes::Opcode;
 use registers::*;
 
-const PC_START: usize = 0;
+const PC_START: Addr = 0;
 
 pub struct VM {
 	pub registers: [Word; REGISTER_COUNT],
 	pub memory: *mut Trit,
-	pub pc: usize,
+	pub pc: Addr,
 	pub running: bool
 }
 
@@ -98,12 +98,12 @@ impl VM {
 			}
 
 			Opcode::Jmp => {
-				let addr = self.next_inst_int() as usize;
+				let addr = self.next_inst_int() as Addr;
 				self.jmp(addr);
 			}
 
 			Opcode::Call => {
-				let addr = self.next_inst_int() as usize;
+				let addr = self.next_inst_int() as Addr;
 				self.call(addr);
 			}
 
@@ -151,18 +151,18 @@ impl VM {
 		}
 	}
 
-	fn jmp(&mut self, addr: usize) {
+	fn jmp(&mut self, addr: Addr) {
 		self.pc = addr;
 	}
 
-	fn call(&mut self, addr: usize) {
+	fn call(&mut self, addr: Addr) {
 		let pc = self.pc as isize;
 		self.write(Register::RA, pc);
 		self.jmp(addr);
 	}
 
 	fn ret(&mut self) {
-		let addr = self.read(Register::RA) as usize;
+		let addr = self.read(Register::RA) as Addr;
 		self.jmp(addr);
 	}
 }

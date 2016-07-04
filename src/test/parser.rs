@@ -67,7 +67,7 @@ fn parser_int_register() {
 }
 
 #[test]
-fn parser_str_register() {
+fn parser_named_register() {
 	let mut parser = combine::parser(parser::register);
 	assert_eq!(parser.parse("$zero"), Ok((Register::ZERO, "")));
 	assert_eq!(parser.parse("$ra"), Ok((Register::RA, "")));

@@ -41,6 +41,38 @@ impl From<isize> for Register {
 	}
 }
 
+impl<'a> From<&'a str> for Register {
+	fn from(s: &str) -> Register {
+		match s {
+			"zero" => Register::ZERO,
+			"ra" => Register::RA,
+			"lo" => Register::LO,
+			"hi" => Register::HI,
+			"sp" => Register::SP,
+			"fp" => Register::FP,
+			"a0" => Register::A0,
+			"a1" => Register::A1,
+			"a2" => Register::A2,
+			"a3" => Register::A3,
+			"a4" => Register::A4,
+			"a5" => Register::A5,
+			"t0" => Register::T0,
+			"t1" => Register::T1,
+			"t2" => Register::T2,
+			"t3" => Register::T3,
+			"t4" => Register::T4,
+			"t5" => Register::T5,
+			"s0" => Register::S0,
+			"s1" => Register::S1,
+			"s2" => Register::S2,
+			"s3" => Register::S3,
+			"s4" => Register::S4,
+			"s5" => Register::S5,
+			_ => panic!(),
+		}
+	}
+}
+
 impl Register {
 	pub fn index_is_valid(n: isize) -> bool {
 		0 <= n && n < REGISTER_COUNT as isize
@@ -73,36 +105,6 @@ impl Register {
 			"s4" => true,
 			"s5" => true,
 			_ => false,
-		}
-	}
-
-	pub fn from_str(s: &str) -> Register {
-		match s {
-			"zero" => Register::ZERO,
-			"ra" => Register::RA,
-			"lo" => Register::LO,
-			"hi" => Register::HI,
-			"sp" => Register::SP,
-			"fp" => Register::FP,
-			"a0" => Register::A0,
-			"a1" => Register::A1,
-			"a2" => Register::A2,
-			"a3" => Register::A3,
-			"a4" => Register::A4,
-			"a5" => Register::A5,
-			"t0" => Register::T0,
-			"t1" => Register::T1,
-			"t2" => Register::T2,
-			"t3" => Register::T3,
-			"t4" => Register::T4,
-			"t5" => Register::T5,
-			"s0" => Register::S0,
-			"s1" => Register::S1,
-			"s2" => Register::S2,
-			"s3" => Register::S3,
-			"s4" => Register::S4,
-			"s5" => Register::S5,
-			_ => panic!(),
 		}
 	}
 }
