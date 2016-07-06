@@ -1,4 +1,4 @@
-use combine::{alpha_num, choice, char, digit, many1, optional, parser, spaces, string, try, Parser, ParserExt};
+use combine::{alpha_num, any, choice, char, digit, many1, optional, parser, spaces, string, try, Parser, ParserExt};
 use combine::primitives::{State, Stream, ParseResult};
 
 use trit::Trit;
@@ -56,6 +56,10 @@ parser_fn!(alpha_num_string -> String {
 	many1(alpha_num())
 });
 
+parser_fn!(any_string -> String {
+	many1(any())
+});
+
 parser_fn!(register -> Register {
 	let int_register = parser(decimal_value).map(Register::from);
 	let named_register = parser(alpha_num_string).map(|s| Register::from(&s[..]));
@@ -99,4 +103,13 @@ parser_fn!(inst_mov -> Instruction {
 
 parser_fn!(inst_add -> Instruction {
 	string("add").with(parser(args_reg_reg_reg)).map(|(r1, r2, r3)| Instruction::Add(r1, r2, r3))
+});
+
+parser_fn!(instruction -> Instruction {
+	try(parser(inst_mov))
+	.or(try(parser(inst_add)))
+});
+
+parser_fn!(comment -> () {
+	char(';').with(parser(any_string)).map(|_| ())
 });

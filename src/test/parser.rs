@@ -149,7 +149,7 @@ fn parser_opcode() {
 
 #[test]
 fn parser_inst_mov() {
-	let mut parser = combine::parser(parser::inst_mov);
+	let mut parser = combine::parser(parser::instruction);
 	assert_parse!(parser, "mov $a0, $zero", Instruction::Mov(Register::A0, Register::ZERO));
 	assert_parse_err!(parser, "mov $a0 $zero");
 	assert_parse_err!(parser, "mov $a0 $zero");
@@ -159,6 +159,12 @@ fn parser_inst_mov() {
 
 #[test]
 fn parser_inst_add() {
-	let mut parser = combine::parser(parser::inst_add);
+	let mut parser = combine::parser(parser::instruction);
 	assert_parse!(parser, "add $a0, $t0, $s0", Instruction::Add(Register::A0, Register::T0, Register::S0));
+}
+
+#[test]
+fn parser_comment() {
+	let mut parser = combine::parser(parser::comment);
+	assert_parse!(parser, "; commenty stuff", ());
 }
