@@ -4,134 +4,155 @@ use combine::{Parser};
 use trit::Trit;
 use opcodes::Opcode;
 use registers::Register;
+use instructions::Instruction;
 use parser;
+
+macro_rules! assert_parse {
+	($parser: expr, $left: expr, $right: expr) => {
+		assert_eq!($parser.parse($left), Ok(($right, "")));
+	}
+}
+
+macro_rules! assert_parse_err {
+	($parser: expr, $expr: expr) => {
+		assert!($parser.parse($expr).is_err());
+	}
+}
 
 #[test]
 fn parser_trit() {
 	let mut parser = combine::parser(parser::trit);
-
-	assert_eq!(parser.parse("T"), Ok((Trit::Neg, "")));
-	assert_eq!(parser.parse("0"), Ok((Trit::Zero, "")));
-	assert_eq!(parser.parse("1"), Ok((Trit::Pos, "")));
-
-	assert!(parser.parse("t").is_err());
-	assert!(parser.parse("2").is_err());
+	assert_parse!(parser, "T", Trit::Neg);
+	assert_parse!(parser, "0", Trit::Zero);
+	assert_parse!(parser, "1", Trit::Pos);
+	assert_parse_err!(parser, "t");
+	assert_parse_err!(parser, "2");
 }
 
 #[test]
 fn parser_trits() {
 	let mut parser = combine::parser(parser::trits);
-	assert_eq!(parser.parse("T01"), Ok((vec![Trit::Neg, Trit::Zero, Trit::Pos], "")));
+	assert_parse!(parser, "T01", vec![Trit::Neg, Trit::Zero, Trit::Pos]);
 }
 
 #[test]
 fn parser_ternary_literal() {
 	let mut parser = combine::parser(parser::ternary_literal);
-	assert_eq!(parser.parse("0tT01"), Ok((vec![Trit::Pos, Trit::Zero, Trit::Neg], "")));
+	assert_parse!(parser, "0tT01", vec![Trit::Pos, Trit::Zero, Trit::Neg]);
 }
 
 #[test]
 fn parser_decimal_literal() {
 	let mut parser = combine::parser(parser::decimal_literal);
-	assert_eq!(parser.parse("12345"), Ok((12345, "")));
-	assert_eq!(parser.parse("+12345"), Ok((12345, "")));
-	assert_eq!(parser.parse("-12345"), Ok((-12345, "")));
+	assert_parse!(parser, "12345", 12345);
+	assert_parse!(parser, "+12345", 12345);
+	assert_parse!(parser, "-12345", -12345);
 }
 
 #[test]
 fn parser_int_register() {
 	let mut parser = combine::parser(parser::register);
-	assert_eq!(parser.parse("$0"), Ok((Register::ZERO, "")));
-	assert_eq!(parser.parse("$1"), Ok((Register::RA, "")));
-	assert_eq!(parser.parse("$2"), Ok((Register::LO, "")));
-	assert_eq!(parser.parse("$3"), Ok((Register::HI, "")));
-	assert_eq!(parser.parse("$4"), Ok((Register::SP, "")));
-	assert_eq!(parser.parse("$5"), Ok((Register::FP, "")));
-	assert_eq!(parser.parse("$6"), Ok((Register::A0, "")));
-	assert_eq!(parser.parse("$7"), Ok((Register::A1, "")));
-	assert_eq!(parser.parse("$8"), Ok((Register::A2, "")));
-	assert_eq!(parser.parse("$9"), Ok((Register::A3, "")));
-	assert_eq!(parser.parse("$10"), Ok((Register::A4, "")));
-	assert_eq!(parser.parse("$11"), Ok((Register::A5, "")));
-	assert_eq!(parser.parse("$12"), Ok((Register::T0, "")));
-	assert_eq!(parser.parse("$13"), Ok((Register::T1, "")));
-	assert_eq!(parser.parse("$14"), Ok((Register::T2, "")));
-	assert_eq!(parser.parse("$15"), Ok((Register::T3, "")));
-	assert_eq!(parser.parse("$16"), Ok((Register::T4, "")));
-	assert_eq!(parser.parse("$17"), Ok((Register::T5, "")));
-	assert_eq!(parser.parse("$18"), Ok((Register::S0, "")));
-	assert_eq!(parser.parse("$19"), Ok((Register::S1, "")));
-	assert_eq!(parser.parse("$20"), Ok((Register::S2, "")));
-	assert_eq!(parser.parse("$21"), Ok((Register::S3, "")));
-	assert_eq!(parser.parse("$22"), Ok((Register::S4, "")));
-	assert_eq!(parser.parse("$23"), Ok((Register::S5, "")));
+	assert_parse!(parser, "$0", Register::ZERO);
+	assert_parse!(parser, "$1", Register::RA);
+	assert_parse!(parser, "$2", Register::LO);
+	assert_parse!(parser, "$3", Register::HI);
+	assert_parse!(parser, "$4", Register::SP);
+	assert_parse!(parser, "$5", Register::FP);
+	assert_parse!(parser, "$6", Register::A0);
+	assert_parse!(parser, "$7", Register::A1);
+	assert_parse!(parser, "$8", Register::A2);
+	assert_parse!(parser, "$9", Register::A3);
+	assert_parse!(parser, "$10", Register::A4);
+	assert_parse!(parser, "$11", Register::A5);
+	assert_parse!(parser, "$12", Register::T0);
+	assert_parse!(parser, "$13", Register::T1);
+	assert_parse!(parser, "$14", Register::T2);
+	assert_parse!(parser, "$15", Register::T3);
+	assert_parse!(parser, "$16", Register::T4);
+	assert_parse!(parser, "$17", Register::T5);
+	assert_parse!(parser, "$18", Register::S0);
+	assert_parse!(parser, "$19", Register::S1);
+	assert_parse!(parser, "$20", Register::S2);
+	assert_parse!(parser, "$21", Register::S3);
+	assert_parse!(parser, "$22", Register::S4);
+	assert_parse!(parser, "$23", Register::S5);
 }
 
 #[test]
 fn parser_named_register() {
 	let mut parser = combine::parser(parser::register);
-	assert_eq!(parser.parse("$zero"), Ok((Register::ZERO, "")));
-	assert_eq!(parser.parse("$ra"), Ok((Register::RA, "")));
-	assert_eq!(parser.parse("$lo"), Ok((Register::LO, "")));
-	assert_eq!(parser.parse("$hi"), Ok((Register::HI, "")));
-	assert_eq!(parser.parse("$sp"), Ok((Register::SP, "")));
-	assert_eq!(parser.parse("$fp"), Ok((Register::FP, "")));
-	assert_eq!(parser.parse("$a0"), Ok((Register::A0, "")));
-	assert_eq!(parser.parse("$a1"), Ok((Register::A1, "")));
-	assert_eq!(parser.parse("$a2"), Ok((Register::A2, "")));
-	assert_eq!(parser.parse("$a3"), Ok((Register::A3, "")));
-	assert_eq!(parser.parse("$a4"), Ok((Register::A4, "")));
-	assert_eq!(parser.parse("$a5"), Ok((Register::A5, "")));
-	assert_eq!(parser.parse("$t0"), Ok((Register::T0, "")));
-	assert_eq!(parser.parse("$t1"), Ok((Register::T1, "")));
-	assert_eq!(parser.parse("$t2"), Ok((Register::T2, "")));
-	assert_eq!(parser.parse("$t3"), Ok((Register::T3, "")));
-	assert_eq!(parser.parse("$t4"), Ok((Register::T4, "")));
-	assert_eq!(parser.parse("$t5"), Ok((Register::T5, "")));
-	assert_eq!(parser.parse("$s0"), Ok((Register::S0, "")));
-	assert_eq!(parser.parse("$s1"), Ok((Register::S1, "")));
-	assert_eq!(parser.parse("$s2"), Ok((Register::S2, "")));
-	assert_eq!(parser.parse("$s3"), Ok((Register::S3, "")));
-	assert_eq!(parser.parse("$s4"), Ok((Register::S4, "")));
-	assert_eq!(parser.parse("$s5"), Ok((Register::S5, "")));
+	assert_parse!(parser, "$zero", Register::ZERO);
+	assert_parse!(parser, "$ra", Register::RA);
+	assert_parse!(parser, "$lo", Register::LO);
+	assert_parse!(parser, "$hi", Register::HI);
+	assert_parse!(parser, "$sp", Register::SP);
+	assert_parse!(parser, "$fp", Register::FP);
+	assert_parse!(parser, "$a0", Register::A0);
+	assert_parse!(parser, "$a1", Register::A1);
+	assert_parse!(parser, "$a2", Register::A2);
+	assert_parse!(parser, "$a3", Register::A3);
+	assert_parse!(parser, "$a4", Register::A4);
+	assert_parse!(parser, "$a5", Register::A5);
+	assert_parse!(parser, "$t0", Register::T0);
+	assert_parse!(parser, "$t1", Register::T1);
+	assert_parse!(parser, "$t2", Register::T2);
+	assert_parse!(parser, "$t3", Register::T3);
+	assert_parse!(parser, "$t4", Register::T4);
+	assert_parse!(parser, "$t5", Register::T5);
+	assert_parse!(parser, "$s0", Register::S0);
+	assert_parse!(parser, "$s1", Register::S1);
+	assert_parse!(parser, "$s2", Register::S2);
+	assert_parse!(parser, "$s3", Register::S3);
+	assert_parse!(parser, "$s4", Register::S4);
+	assert_parse!(parser, "$s5", Register::S5);
 }
 
 #[test]
 fn parser_opcode() {
 	let mut parser = combine::parser(parser::opcode);
-	assert_eq!(parser.parse("mov"), Ok((Opcode::Mov, "")));
-	assert_eq!(parser.parse("movi"), Ok((Opcode::Movi, "")));
-	assert_eq!(parser.parse("movw"), Ok((Opcode::Movw, "")));
-	assert_eq!(parser.parse("lb"), Ok((Opcode::Lb, "")));
-	assert_eq!(parser.parse("lh"), Ok((Opcode::Lh, "")));
-	assert_eq!(parser.parse("lw"), Ok((Opcode::Lw, "")));
-	assert_eq!(parser.parse("sb"), Ok((Opcode::Sb, "")));
-	assert_eq!(parser.parse("sh"), Ok((Opcode::Sh, "")));
-	assert_eq!(parser.parse("sw"), Ok((Opcode::Sw, "")));
-	assert_eq!(parser.parse("add"), Ok((Opcode::Add, "")));
-	assert_eq!(parser.parse("addi"), Ok((Opcode::Addi, "")));
-	assert_eq!(parser.parse("mul"), Ok((Opcode::Mul, "")));
-	assert_eq!(parser.parse("muli"), Ok((Opcode::Muli, "")));
-	assert_eq!(parser.parse("not"), Ok((Opcode::Not, "")));
-	assert_eq!(parser.parse("and"), Ok((Opcode::And, "")));
-	assert_eq!(parser.parse("andi"), Ok((Opcode::Andi, "")));
-	assert_eq!(parser.parse("or"), Ok((Opcode::Or, "")));
-	assert_eq!(parser.parse("ori"), Ok((Opcode::Ori, "")));
-	assert_eq!(parser.parse("shf"), Ok((Opcode::Shf, "")));
-	assert_eq!(parser.parse("shfi"), Ok((Opcode::Shfi, "")));
-	assert_eq!(parser.parse("cmp"), Ok((Opcode::Cmp, "")));
-	assert_eq!(parser.parse("jmp"), Ok((Opcode::Jmp, "")));
-	assert_eq!(parser.parse("jr"), Ok((Opcode::Jr, "")));
-	assert_eq!(parser.parse("jT"), Ok((Opcode::JT, "")));
-	assert_eq!(parser.parse("j0"), Ok((Opcode::J0, "")));
-	assert_eq!(parser.parse("j1"), Ok((Opcode::J1, "")));
-	assert_eq!(parser.parse("jT0"), Ok((Opcode::JT0, "")));
-	assert_eq!(parser.parse("jT1"), Ok((Opcode::JT1, "")));
-	assert_eq!(parser.parse("j01"), Ok((Opcode::J01, "")));
-	assert_eq!(parser.parse("call"), Ok((Opcode::Call, "")));
-	assert_eq!(parser.parse("callr"), Ok((Opcode::Callr, "")));
-	assert_eq!(parser.parse("ret"), Ok((Opcode::Ret, "")));
-	assert_eq!(parser.parse("sys"), Ok((Opcode::Sys, "")));
-	assert_eq!(parser.parse("break"), Ok((Opcode::Break, "")));
-	assert_eq!(parser.parse("halt"), Ok((Opcode::Halt, "")));
+	assert_parse!(parser, "mov", Opcode::Mov);
+	assert_parse!(parser, "movi", Opcode::Movi);
+	assert_parse!(parser, "movw", Opcode::Movw);
+	assert_parse!(parser, "lb", Opcode::Lb);
+	assert_parse!(parser, "lh", Opcode::Lh);
+	assert_parse!(parser, "lw", Opcode::Lw);
+	assert_parse!(parser, "sb", Opcode::Sb);
+	assert_parse!(parser, "sh", Opcode::Sh);
+	assert_parse!(parser, "sw", Opcode::Sw);
+	assert_parse!(parser, "add", Opcode::Add);
+	assert_parse!(parser, "addi", Opcode::Addi);
+	assert_parse!(parser, "mul", Opcode::Mul);
+	assert_parse!(parser, "muli", Opcode::Muli);
+	assert_parse!(parser, "not", Opcode::Not);
+	assert_parse!(parser, "and", Opcode::And);
+	assert_parse!(parser, "andi", Opcode::Andi);
+	assert_parse!(parser, "or", Opcode::Or);
+	assert_parse!(parser, "ori", Opcode::Ori);
+	assert_parse!(parser, "shf", Opcode::Shf);
+	assert_parse!(parser, "shfi", Opcode::Shfi);
+	assert_parse!(parser, "cmp", Opcode::Cmp);
+	assert_parse!(parser, "jmp", Opcode::Jmp);
+	assert_parse!(parser, "jr", Opcode::Jr);
+	assert_parse!(parser, "jT", Opcode::JT);
+	assert_parse!(parser, "j0", Opcode::J0);
+	assert_parse!(parser, "j1", Opcode::J1);
+	assert_parse!(parser, "jT0", Opcode::JT0);
+	assert_parse!(parser, "jT1", Opcode::JT1);
+	assert_parse!(parser, "j01", Opcode::J01);
+	assert_parse!(parser, "call", Opcode::Call);
+	assert_parse!(parser, "callr", Opcode::Callr);
+	assert_parse!(parser, "ret", Opcode::Ret);
+	assert_parse!(parser, "sys", Opcode::Sys);
+	assert_parse!(parser, "break", Opcode::Break);
+	assert_parse!(parser, "halt", Opcode::Halt);
+}
+
+#[test]
+fn parser_inst_mov() {
+	let mut parser = combine::parser(parser::inst_mov);
+	assert_parse!(parser, "mov $a0, $zero", Instruction::Mov(Register::A0, Register::ZERO));
+	assert_parse_err!(parser, "mov $a0 $zero");
+	assert_parse_err!(parser, "mov $a0 $zero");
+	assert_parse_err!(parser, "mov, $a0, $zero");
+	assert_parse_err!(parser, "mov $a0 zero");
 }

@@ -1,9 +1,10 @@
-use combine::{any, choice, char, digit, many1, optional, parser, string, try, Parser, ParserExt};
+use combine::{alpha_num, choice, char, digit, many1, optional, parser, spaces, string, try, Parser, ParserExt};
 use combine::primitives::{State, Stream, ParseResult};
 
 use trit::Trit;
 use opcodes::Opcode;
 use registers::Register;
+use instructions::Instruction;
 
 fn isize_from_digit(c: char) -> isize {
 	c.to_string().parse::<isize>().unwrap()
@@ -31,7 +32,7 @@ parser_fn!(trits -> Vec<Trit> {
 });
 
 parser_fn!(ternary_literal -> Vec<Trit> {
-	(string("0t"), parser(trits)).map(|t| t.1.into_iter().rev().collect())
+	(string("0t"), parser(trits)).map(|(_, t)| t.into_iter().rev().collect())
 });
 
 parser_fn!(number_sign -> isize {
@@ -51,17 +52,37 @@ parser_fn!(decimal_literal -> isize {
 	(parser(number_sign), parser(decimal_value)).map(|(s, n)| s * n)
 });
 
-parser_fn!(any_string -> String {
-	many1(any())
+parser_fn!(alpha_num_string -> String {
+	many1(alpha_num())
 });
 
 parser_fn!(register -> Register {
 	let int_register = parser(decimal_value).map(Register::from);
-	let named_register = parser(any_string).map(|s| Register::from(&s[..]));
+	let named_register = parser(alpha_num_string).map(|s| Register::from(&s[..]));
 	let register = try(int_register).or(try(named_register));
 	char('$').with(register)
 });
 
 parser_fn!(opcode -> Opcode {
-	parser(any_string).map(|s| Opcode::from(&s[..]))
+	parser(alpha_num_string).map(|s| Opcode::from(&s[..]))
+});
+
+parser_fn!(comma -> () {
+	(spaces(), char(','), spaces()).map(|_| ())
+});
+
+parser_fn!(args_reg -> Register {
+	spaces().with(parser(register))
+});
+
+parser_fn!(args_reg_reg -> (Register, Register) {
+	spaces().with((
+		parser(register),
+		parser(comma),
+		parser(register),
+	)).map(|(r1, _, r2)| (r1, r2))
+});
+
+parser_fn!(inst_mov -> Instruction {
+	string("mov").with(parser(args_reg_reg)).map(|(r1, r2)| Instruction::Mov(r1, r2))
 });
