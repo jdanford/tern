@@ -69,7 +69,7 @@ impl VM {
 			ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
 		}
 
-		self.pc += WORD_SIZE;
+		self.pc += WORD_SIZE as Addr;
 		inst
 	}
 

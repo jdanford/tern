@@ -14,3 +14,4 @@ pub type Word = [Trit; WORD_SIZE];
 
 pub type Addr = usize;
 pub type RelAddr = isize;
+pub type Label = String;
