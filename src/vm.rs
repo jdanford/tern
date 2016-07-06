@@ -1,4 +1,5 @@
-use libc::malloc;
+use libc::{malloc, free};
+use rlibc::{memset};
 use std::mem::transmute;
 
 use trit::Trit;
@@ -19,7 +20,11 @@ pub struct VM {
 impl VM {
 	pub fn new(memory_size: usize) -> VM {
 		let registers = [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT];
-		let memory = unsafe { transmute(malloc(memory_size)) };
+		let memory = unsafe {
+			let ptr = malloc(memory_size);
+			memset(transmute(ptr), 0, memory_size);
+			transmute(ptr)
+		};
 
 		VM {
 			registers: registers,
@@ -69,7 +74,7 @@ impl VM {
 			ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
 		}
 
-		self.pc += WORD_SIZE as Addr;
+		self.pc += WORD_SIZE;
 		inst
 	}
 
@@ -82,19 +87,18 @@ impl VM {
 		let inst = self.next_inst_word();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
 		let opcode = Opcode::from(t0);
-		let (r1, r2, r3) = (Register::from(t1), Register::from(t2), Register::from(t3));
 
 		match opcode {
 			Opcode::Mov => {
-				self.mov(r1, r2);
+				self.mov(Register::from(t1), Register::from(t2));
 			}
 
 			Opcode::Add => {
-				self.add(r1, r2, r3);
+				self.add(Register::from(t1), Register::from(t2), Register::from(t3));
 			}
 
 			Opcode::Mul => {
-				self.mul(r1, r2);
+				self.mul(Register::from(t1), Register::from(t2));
 			}
 
 			Opcode::Jmp => {
@@ -164,5 +168,11 @@ impl VM {
 	fn ret(&mut self) {
 		let addr = self.read(Register::RA) as Addr;
 		self.jmp(addr);
+	}
+}
+
+impl Drop for VM {
+	fn drop(&mut self) {
+		unsafe { free(transmute(self.memory)) };
 	}
 }

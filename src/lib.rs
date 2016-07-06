@@ -2,6 +2,7 @@
 
 extern crate core;
 extern crate libc;
+extern crate rlibc;
 
 extern crate combine;
 
