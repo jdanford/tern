@@ -83,6 +83,20 @@ parser_fn!(args_reg_reg -> (Register, Register) {
 	)).map(|(r1, _, r2)| (r1, r2))
 });
 
+parser_fn!(args_reg_reg_reg -> (Register, Register, Register) {
+	spaces().with((
+		parser(register),
+		parser(comma),
+		parser(register),
+		parser(comma),
+		parser(register),
+	)).map(|(r1, _, r2, _, r3)| (r1, r2, r3))
+});
+
 parser_fn!(inst_mov -> Instruction {
 	string("mov").with(parser(args_reg_reg)).map(|(r1, r2)| Instruction::Mov(r1, r2))
+});
+
+parser_fn!(inst_add -> Instruction {
+	string("add").with(parser(args_reg_reg_reg)).map(|(r1, r2, r3)| Instruction::Add(r1, r2, r3))
 });

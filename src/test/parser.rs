@@ -156,3 +156,9 @@ fn parser_inst_mov() {
 	assert_parse_err!(parser, "mov, $a0, $zero");
 	assert_parse_err!(parser, "mov $a0 zero");
 }
+
+#[test]
+fn parser_inst_add() {
+	let mut parser = combine::parser(parser::inst_add);
+	assert_parse!(parser, "add $a0, $t0, $s0", Instruction::Add(Register::A0, Register::T0, Register::S0));
+}
