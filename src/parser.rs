@@ -2,7 +2,8 @@ use combine::{any, choice, char, digit, many1, optional, parser, string, try, Pa
 use combine::primitives::{State, Stream, ParseResult};
 
 use trit::Trit;
-use registers::*;
+use opcodes::Opcode;
+use registers::Register;
 
 fn isize_from_digit(c: char) -> isize {
 	c.to_string().parse::<isize>().unwrap()
@@ -59,4 +60,8 @@ parser_fn!(register -> Register {
 	let named_register = parser(any_string).map(|s| Register::from(&s[..]));
 	let register = try(int_register).or(try(named_register));
 	char('$').with(register)
+});
+
+parser_fn!(opcode -> Opcode {
+	parser(any_string).map(|s| Opcode::from(&s[..]))
 });

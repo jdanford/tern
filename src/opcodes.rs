@@ -51,14 +51,98 @@ impl Opcode {
 	pub fn index_is_valid(n: isize) -> bool {
 		(Opcode::Mov as isize) <= n && n <= (Opcode::Halt as isize)
 	}
+
+	pub fn name_is_valid(s: &str) -> bool {
+		match s {
+			"mov" => true,
+			"movi" => true,
+			"movw" => true,
+			"lb" => true,
+			"lh" => true,
+			"lw" => true,
+			"sb" => true,
+			"sh" => true,
+			"sw" => true,
+			"add" => true,
+			"addi" => true,
+			"mul" => true,
+			"muli" => true,
+			"not" => true,
+			"and" => true,
+			"andi" => true,
+			"or" => true,
+			"ori" => true,
+			"shf" => true,
+			"shfi" => true,
+			"cmp" => true,
+			"jmp" => true,
+			"jr" => true,
+			"jT" => true,
+			"j0" => true,
+			"j1" => true,
+			"jT0" => true,
+			"jT1" => true,
+			"j01" => true,
+			"call" => true,
+			"callr" => true,
+			"ret" => true,
+			"sys" => true,
+			"break" => true,
+			"halt" => true,
+			_ => false,
+		}
+	}
 }
 
 impl From<isize> for Opcode {
 	fn from(n: isize) -> Opcode {
 		if !Opcode::index_is_valid(n) {
-			panic!()
+			panic!("Invalid index: {}", n);
 		}
 
 		unsafe { transmute(n as i16) }
+	}
+}
+
+impl<'a> From<&'a str> for Opcode {
+	fn from(s: &str) -> Opcode {
+		match s {
+			"mov" => Opcode::Mov,
+			"movi" => Opcode::Movi,
+			"movw" => Opcode::Movw,
+			"lb" => Opcode::Lb,
+			"lh" => Opcode::Lh,
+			"lw" => Opcode::Lw,
+			"sb" => Opcode::Sb,
+			"sh" => Opcode::Sh,
+			"sw" => Opcode::Sw,
+			"add" => Opcode::Add,
+			"addi" => Opcode::Addi,
+			"mul" => Opcode::Mul,
+			"muli" => Opcode::Muli,
+			"not" => Opcode::Not,
+			"and" => Opcode::And,
+			"andi" => Opcode::Andi,
+			"or" => Opcode::Or,
+			"ori" => Opcode::Ori,
+			"shf" => Opcode::Shf,
+			"shfi" => Opcode::Shfi,
+			"cmp" => Opcode::Cmp,
+			"jmp" => Opcode::Jmp,
+			"jr" => Opcode::Jr,
+			"jT" => Opcode::JT,
+			"j0" => Opcode::J0,
+			"j1" => Opcode::J1,
+			"jT0" => Opcode::JT0,
+			"jT1" => Opcode::JT1,
+			"j01" => Opcode::J01,
+			"call" => Opcode::Call,
+			"callr" => Opcode::Callr,
+			"ret" => Opcode::Ret,
+			"sys" => Opcode::Sys,
+			"break" => Opcode::Break,
+			"halt" => Opcode::Halt,
+			_ => panic!("Invalid opcode: {}", s),
+		}
 	}
 }

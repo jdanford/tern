@@ -2,6 +2,7 @@ use combine;
 use combine::{Parser};
 
 use trit::Trit;
+use opcodes::Opcode;
 use registers::Register;
 use parser;
 
@@ -93,4 +94,44 @@ fn parser_named_register() {
 	assert_eq!(parser.parse("$s3"), Ok((Register::S3, "")));
 	assert_eq!(parser.parse("$s4"), Ok((Register::S4, "")));
 	assert_eq!(parser.parse("$s5"), Ok((Register::S5, "")));
+}
+
+#[test]
+fn parser_opcode() {
+	let mut parser = combine::parser(parser::opcode);
+	assert_eq!(parser.parse("mov"), Ok((Opcode::Mov, "")));
+	assert_eq!(parser.parse("movi"), Ok((Opcode::Movi, "")));
+	assert_eq!(parser.parse("movw"), Ok((Opcode::Movw, "")));
+	assert_eq!(parser.parse("lb"), Ok((Opcode::Lb, "")));
+	assert_eq!(parser.parse("lh"), Ok((Opcode::Lh, "")));
+	assert_eq!(parser.parse("lw"), Ok((Opcode::Lw, "")));
+	assert_eq!(parser.parse("sb"), Ok((Opcode::Sb, "")));
+	assert_eq!(parser.parse("sh"), Ok((Opcode::Sh, "")));
+	assert_eq!(parser.parse("sw"), Ok((Opcode::Sw, "")));
+	assert_eq!(parser.parse("add"), Ok((Opcode::Add, "")));
+	assert_eq!(parser.parse("addi"), Ok((Opcode::Addi, "")));
+	assert_eq!(parser.parse("mul"), Ok((Opcode::Mul, "")));
+	assert_eq!(parser.parse("muli"), Ok((Opcode::Muli, "")));
+	assert_eq!(parser.parse("not"), Ok((Opcode::Not, "")));
+	assert_eq!(parser.parse("and"), Ok((Opcode::And, "")));
+	assert_eq!(parser.parse("andi"), Ok((Opcode::Andi, "")));
+	assert_eq!(parser.parse("or"), Ok((Opcode::Or, "")));
+	assert_eq!(parser.parse("ori"), Ok((Opcode::Ori, "")));
+	assert_eq!(parser.parse("shf"), Ok((Opcode::Shf, "")));
+	assert_eq!(parser.parse("shfi"), Ok((Opcode::Shfi, "")));
+	assert_eq!(parser.parse("cmp"), Ok((Opcode::Cmp, "")));
+	assert_eq!(parser.parse("jmp"), Ok((Opcode::Jmp, "")));
+	assert_eq!(parser.parse("jr"), Ok((Opcode::Jr, "")));
+	assert_eq!(parser.parse("jT"), Ok((Opcode::JT, "")));
+	assert_eq!(parser.parse("j0"), Ok((Opcode::J0, "")));
+	assert_eq!(parser.parse("j1"), Ok((Opcode::J1, "")));
+	assert_eq!(parser.parse("jT0"), Ok((Opcode::JT0, "")));
+	assert_eq!(parser.parse("jT1"), Ok((Opcode::JT1, "")));
+	assert_eq!(parser.parse("j01"), Ok((Opcode::J01, "")));
+	assert_eq!(parser.parse("call"), Ok((Opcode::Call, "")));
+	assert_eq!(parser.parse("callr"), Ok((Opcode::Callr, "")));
+	assert_eq!(parser.parse("ret"), Ok((Opcode::Ret, "")));
+	assert_eq!(parser.parse("sys"), Ok((Opcode::Sys, "")));
+	assert_eq!(parser.parse("break"), Ok((Opcode::Break, "")));
+	assert_eq!(parser.parse("halt"), Ok((Opcode::Halt, "")));
 }

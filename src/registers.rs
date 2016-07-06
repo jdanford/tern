@@ -31,10 +31,46 @@ pub enum Register {
 	S5 = 23,
 }
 
+impl Register {
+	pub fn index_is_valid(n: isize) -> bool {
+		0 <= n && n < REGISTER_COUNT as isize
+	}
+
+	pub fn name_is_valid(s: &str) -> bool {
+		match s {
+			"zero" => true,
+			"ra" => true,
+			"lo" => true,
+			"hi" => true,
+			"sp" => true,
+			"fp" => true,
+			"a0" => true,
+			"a1" => true,
+			"a2" => true,
+			"a3" => true,
+			"a4" => true,
+			"a5" => true,
+			"t0" => true,
+			"t1" => true,
+			"t2" => true,
+			"t3" => true,
+			"t4" => true,
+			"t5" => true,
+			"s0" => true,
+			"s1" => true,
+			"s2" => true,
+			"s3" => true,
+			"s4" => true,
+			"s5" => true,
+			_ => false,
+		}
+	}
+}
+
 impl From<isize> for Register {
 	fn from(n: isize) -> Register {
 		if !Register::index_is_valid(n) {
-			panic!()
+			panic!("Invalid index: {}", n);
 		}
 
 		unsafe { transmute(n as i16) }
@@ -68,43 +104,7 @@ impl<'a> From<&'a str> for Register {
 			"s3" => Register::S3,
 			"s4" => Register::S4,
 			"s5" => Register::S5,
-			_ => panic!(),
-		}
-	}
-}
-
-impl Register {
-	pub fn index_is_valid(n: isize) -> bool {
-		0 <= n && n < REGISTER_COUNT as isize
-	}
-
-	pub fn name_is_valid(s: &str) -> bool {
-		match s {
-			"zero" => true,
-			"ra" => true,
-			"lo" => true,
-			"hi" => true,
-			"sp" => true,
-			"fp" => true,
-			"a0" => true,
-			"a1" => true,
-			"a2" => true,
-			"a3" => true,
-			"a4" => true,
-			"a5" => true,
-			"t0" => true,
-			"t1" => true,
-			"t2" => true,
-			"t3" => true,
-			"t4" => true,
-			"t5" => true,
-			"s0" => true,
-			"s1" => true,
-			"s2" => true,
-			"s3" => true,
-			"s4" => true,
-			"s5" => true,
-			_ => false,
+			_ => panic!("Invalid register: {}", s),
 		}
 	}
 }
