@@ -50,6 +50,12 @@ fn parser_decimal_literal() {
 }
 
 #[test]
+fn parser_label() {
+	let mut parser = combine::parser(parser::label);
+	assert_parse!(parser, "_start123", "_start123".to_string());
+}
+
+#[test]
 fn parser_int_register() {
 	let mut parser = combine::parser(parser::register);
 	assert_parse!(parser, "$0", Register::ZERO);
