@@ -1,5 +1,14 @@
 use trit::Trit;
 
+pub const TRYTE_MIN: isize = -364;
+pub const TRYTE_MAX: isize = 364;
+
+pub const HALFWORD_MIN: isize = -265_720;
+pub const HALFWORD_MAX: isize = 265_720;
+
+pub const WORD_MIN: isize = -141_214_768_240;
+pub const WORD_MAX: isize = 141_214_768_240;
+
 pub const TRYTE_SIZE: usize = 6;
 pub const HALFWORD_SIZE: usize = 12;
 pub const WORD_SIZE: usize = 24;

@@ -1,4 +1,5 @@
 use std::mem::transmute;
+use std::str::FromStr;
 
 pub const REGISTER_COUNT: usize = 24;
 
@@ -105,6 +106,40 @@ impl<'a> From<&'a str> for Register {
 			"s4" => Register::S4,
 			"s5" => Register::S5,
 			_ => panic!("Invalid register: {}", s),
+		}
+	}
+}
+
+impl FromStr for Register {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"$zero" | "$0" => Ok(Register::ZERO),
+			"$ra" | "$1" => Ok(Register::RA),
+			"$lo" | "$2" => Ok(Register::LO),
+			"$hi" | "$3" => Ok(Register::HI),
+			"$sp" | "$4" => Ok(Register::SP),
+			"$fp" | "$5" => Ok(Register::FP),
+			"$a0" | "$6" => Ok(Register::A0),
+			"$a1" | "$7" => Ok(Register::A1),
+			"$a2" | "$8" => Ok(Register::A2),
+			"$a3" | "$9" => Ok(Register::A3),
+			"$a4" | "$10" => Ok(Register::A4),
+			"$a5" | "$11" => Ok(Register::A5),
+			"$t0" | "$12" => Ok(Register::T0),
+			"$t1" | "$13" => Ok(Register::T1),
+			"$t2" | "$14" => Ok(Register::T2),
+			"$t3" | "$15" => Ok(Register::T3),
+			"$t4" | "$16" => Ok(Register::T4),
+			"$t5" | "$17" => Ok(Register::T5),
+			"$s0" | "$18" => Ok(Register::S0),
+			"$s1" | "$19" => Ok(Register::S1),
+			"$s2" | "$20" => Ok(Register::S2),
+			"$s3" | "$21" => Ok(Register::S3),
+			"$s4" | "$22" => Ok(Register::S4),
+			"$s5" | "$23" => Ok(Register::S5),
+			_ => Err(s.to_string()),
 		}
 	}
 }

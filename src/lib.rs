@@ -2,9 +2,8 @@
 
 extern crate core;
 extern crate libc;
+extern crate regex;
 extern crate rlibc;
-
-extern crate combine;
 
 #[macro_use] mod macros;
 pub mod trit;
@@ -13,7 +12,7 @@ pub mod types;
 pub mod opcodes;
 pub mod registers;
 pub mod instructions;
-pub mod parser;
+pub mod reader;
 pub mod vm;
 
 #[cfg(test)]

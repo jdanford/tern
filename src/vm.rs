@@ -6,7 +6,7 @@ use trit::Trit;
 use ternary;
 use types::*;
 use opcodes::Opcode;
-use registers::*;
+use registers::{Register, REGISTER_COUNT};
 
 const PC_START: Addr = 0;
 

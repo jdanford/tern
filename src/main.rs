@@ -16,7 +16,7 @@ macro_rules! mut_ptr {
 }
 
 fn main() {
-	let arg = env::args().skip(1).next().unwrap_or_default();
+	let arg = env::args().nth(1).unwrap_or_default();
 	let is_ternary_mode = arg == "--ternary";
 
 	loop {
