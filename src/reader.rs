@@ -373,12 +373,10 @@ impl Program {
 			}
 		}
 
-		self.debug();
-
 		Ok(())
 	}
 
-	fn debug(&self) {
+	pub fn debug(&self) {
 		let mut labels = self.labels.iter().collect::<Vec<_>>();
 		labels.sort_by_key(|&(_, pc)| pc);
 
