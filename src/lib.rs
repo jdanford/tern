@@ -12,7 +12,8 @@ pub mod types;
 pub mod opcodes;
 pub mod registers;
 pub mod instructions;
-pub mod reader;
+pub mod parser;
+pub mod program;
 pub mod vm;
 
 #[cfg(test)]

@@ -1,13 +1,21 @@
 extern crate tern;
 
 use std::env;
+use std::fs::{File};
+use std::io;
+use std::io::prelude::*;
 
-use tern::reader::Program;
+use tern::program::Program;
 
 fn main() {
 	if let Some(path) = env::args().nth(1) {
+		let reader: Box<Read> = match &path[..] {
+			"-" => Box::new(io::stdin()),
+			_ => Box::new(File::open(path).unwrap()),
+		};
+
 		let mut program = Program::new();
-		match program.read_file(&path[..]) {
+		match program.read(reader) {
 			Ok(()) => {
 				program.debug();
 			}
