@@ -99,6 +99,11 @@ impl VM {
 				self.add(Register::from(t1), Register::from(t2), Register::from(t3));
 			}
 
+			Opcode::Addi => {
+				let halfword = inst_halfword(inst);
+				self.addi(Register::from(t1), halfword);
+			}
+
 			Opcode::Mul => {
 				self.mul(Register::from(t1), Register::from(t2));
 			}
@@ -149,11 +154,26 @@ impl VM {
 		let rhs = self.src(r_rhs);
 
 		unsafe {
-			self.clear(r_dest);
+			ternary::clear(dest, WORD_ISIZE);
 			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
 			self.clear(Register::HI);
 			ternary::set_trit(self.dest(Register::HI), 0, carry);
-		}
+		};
+	}
+
+	fn addi(&mut self, r_dest: Register, halfword: Halfword) {
+		let dest = self.dest(r_dest);
+		let lhs = dest;
+
+		let mut word = EMPTY_WORD;
+		let rhs = mut_ptr!(word);
+
+		unsafe {
+			ternary::copy(rhs, ptr!(halfword), HALFWORD_ISIZE);
+			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
+			self.clear(Register::HI);
+			ternary::set_trit(self.dest(Register::HI), 0, carry);
+		};
 	}
 
 	fn mul(&mut self, r_lhs: Register, r_rhs: Register) {

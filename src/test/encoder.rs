@@ -19,14 +19,14 @@ fn vm_from_code(code: &str) -> Result<VM, String> {
 fn encoder_mov() {
 	let code = r#"
 	start:
-		movi $a0, 100
+		movi $a0, 103
 		jmp end
 
 	garbage:
 		movi $a0, 456
 
 	end:
-		addi $a0, $a0, 23
+		addi $a0, 20
 		halt
 	"#;
 
