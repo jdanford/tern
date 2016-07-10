@@ -1,4 +1,3 @@
-use types::*;
 use registers::Register;
 use vm::VM;
 use program::Program;
@@ -8,7 +7,7 @@ fn vm_from_code(code: &str) -> Result<VM, String> {
 	let mut program = Program::new();
 	try!(program.read_str(code).map_err(|e| format!("{:?}", e)));
 
-	let vm = VM::new(program.pc * WORD_SIZE);
+	let vm = VM::new(program.pc);
 
 	let mut encoder = Encoder::new(vm.memory, vm.memory_size);
 	try!(encoder.encode(program).map_err(|e| format!("{:?}", e)));
@@ -19,7 +18,15 @@ fn vm_from_code(code: &str) -> Result<VM, String> {
 #[test]
 fn encoder_mov() {
 	let code = r#"
-		movi $a0, 123
+	start:
+		movi $a0, 100
+		jmp end
+
+	garbage:
+		movi $a0, 456
+
+	end:
+		addi $a0, $a0, 23
 		halt
 	"#;
 

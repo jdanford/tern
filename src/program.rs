@@ -75,12 +75,12 @@ impl Program {
 		for instruction in instructions {
 			if let Some(&(label, &label_pc)) = labels.get(0) {
 				if label_pc == pc {
-					println!("{}:", label);
+					println!("{} {}:", pc, label);
 					labels.remove(0);
 				}
 			}
 
-			println!("{:02} {:?}", pc, instruction);
+			println!("{:?}", instruction);
 			pc += instruction.size();
 		}
 	}

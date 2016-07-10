@@ -52,7 +52,7 @@ impl Encoder {
 			try!(self.check_pc(new_pc));
 
 			unsafe {
-				let local_memory = self.memory.offset(self.pc as isize * WORD_ISIZE);
+				let local_memory = self.memory.offset(self.pc as isize);
 				ternary::clear(local_memory, inst_size as isize);
 				try!(self.encode_instruction(local_memory, instruction));
 			};
@@ -81,7 +81,7 @@ impl Encoder {
 			Instruction::Movw(r, word) => {
 				try!(self.encode_opcode(memory, Opcode::Movw));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_word(tryte_offset!(memory, 2), word));
+				try!(self.encode_word(tryte_offset!(memory, 4), word));
 			}
 
 			Instruction::Lb(r1, r2, offset) => {
@@ -205,7 +205,7 @@ impl Encoder {
 
 			Instruction::Jmp(ref label) => {
 				try!(self.encode_opcode(memory, Opcode::Jmp));
-				try!(self.encode_label(tryte_offset!(memory, 1), label));
+				try!(self.encode_label(tryte_offset!(memory, 4), label));
 			}
 
 			Instruction::Jr(r) => {
@@ -251,7 +251,7 @@ impl Encoder {
 
 			Instruction::Call(ref label) => {
 				try!(self.encode_opcode(memory, Opcode::Call));
-				try!(self.encode_label(tryte_offset!(memory, 1), label));
+				try!(self.encode_label(tryte_offset!(memory, 4), label));
 			}
 
 			Instruction::Callr(r) => {
@@ -317,7 +317,7 @@ impl Encoder {
 	}
 
 	fn check_pc(&self, pc: usize) -> Result<(), EncodeError> {
-		if pc * WORD_SIZE > self.memory_size {
+		if pc > self.memory_size {
 			Err(EncodeError::InsufficientMemory)
 		} else {
 			Ok(())

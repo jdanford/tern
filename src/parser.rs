@@ -49,7 +49,6 @@ pub fn parse_line<'a>(line: &'a str) -> Result<ParsedLine, ParseError> {
 		let label_re = try!(Regex::new(patterns::LABEL).map_err(ParseError::RegexError));
 		let captures = try!(label_re.captures(line).ok_or(ParseError::Unknown));
 		if let Some(label) = captures.iter().nth(1).unwrap() {
-			println!("label: {}", label);
 			Ok(ParsedLine::Label(label.to_string()))
 		} else {
 			let label = &line[..line.len() - 1];
