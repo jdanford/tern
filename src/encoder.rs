@@ -8,13 +8,14 @@ use registers::Register;
 use instructions::Instruction;
 use program::Program;
 
+#[derive(Debug)]
 pub enum EncodeError {
 	InsufficientMemory,
 	InvalidLabel(Label),
 	IntOutOfRange(isize, isize, isize),
 }
 
-struct Encoder {
+pub struct Encoder {
 	memory: *mut Trit,
 	memory_size: usize,
 	labels: HashMap<Label, Addr>,
@@ -316,7 +317,7 @@ impl Encoder {
 	}
 
 	fn check_pc(&self, pc: usize) -> Result<(), EncodeError> {
-		if pc * WORD_SIZE >= self.memory_size {
+		if pc * WORD_SIZE > self.memory_size {
 			Err(EncodeError::InsufficientMemory)
 		} else {
 			Ok(())

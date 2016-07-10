@@ -32,12 +32,24 @@ impl Program {
 		let buffer = io::BufReader::new(reader);
 		for line_result in buffer.lines() {
 			let raw_line = try!(line_result.map_err(ParseError::IOError));
-			let line = clean_line(&raw_line[..]);
+			try!(self.read_line(&raw_line[..]));
+		}
 
-			if line.is_empty() {
-				continue;
-			}
+		Ok(())
+	}
 
+	pub fn read_str(&mut self, s: &str) -> Result<(), ParseError> {
+		for raw_line in s.lines() {
+			try!(self.read_line(raw_line));
+		}
+
+		Ok(())
+	}
+
+	pub fn read_line(&mut self, raw_line: &str) -> Result<(), ParseError> {
+		let line = clean_line(raw_line);
+
+		if !line.is_empty() {
 			match try!(parse_line(line)) {
 				ParsedLine::Label(label) => {
 					self.labels.insert(label, self.pc);

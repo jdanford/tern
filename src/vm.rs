@@ -68,7 +68,7 @@ impl VM {
 		}
 	}
 
-	fn next_inst_word(&mut self) -> Word {
+	fn next_inst(&mut self) -> Word {
 		let mut inst = [Trit::Zero; WORD_SIZE];
 
 		unsafe {
@@ -80,19 +80,19 @@ impl VM {
 		inst
 	}
 
-	fn next_inst_int(&mut self) -> isize {
-		let word = self.next_inst_word();
-		unsafe { ternary::read_int(ptr!(word), WORD_ISIZE) }
-	}
-
 	pub fn step(&mut self) {
-		let inst = self.next_inst_word();
+		let inst = self.next_inst();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
 		let opcode = Opcode::from(t0);
 
 		match opcode {
 			Opcode::Mov => {
 				self.mov(Register::from(t1), Register::from(t2));
+			}
+
+			Opcode::Movi => {
+				let halfword = inst_halfword(inst);
+				self.movi(Register::from(t1), halfword);
 			}
 
 			Opcode::Add => {
@@ -104,12 +104,14 @@ impl VM {
 			}
 
 			Opcode::Jmp => {
-				let addr = self.next_inst_int() as Addr;
+				let inst = self.next_inst();
+				let addr = inst_addr(inst);
 				self.jmp(addr);
 			}
 
 			Opcode::Call => {
-				let addr = self.next_inst_int() as Addr;
+				let inst = self.next_inst();
+				let addr = inst_addr(inst);
 				self.call(addr);
 			}
 
@@ -131,6 +133,14 @@ impl VM {
 		let dest = self.dest(r_dest);
 		let src = self.src(r_src);
 		unsafe { ternary::copy(dest, src, WORD_ISIZE); }
+	}
+
+	fn movi(&mut self, r_dest: Register, halfword: Halfword) {
+		let dest = self.dest(r_dest);
+		unsafe {
+			ternary::clear(dest, WORD_ISIZE);
+			ternary::copy(dest, ptr!(halfword), HALFWORD_ISIZE);
+		}
 	}
 
 	fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
@@ -171,6 +181,16 @@ impl VM {
 		let addr = self.read(Register::RA) as Addr;
 		self.jmp(addr);
 	}
+}
+
+fn inst_halfword(inst: Word) -> Halfword {
+	let mut halfword = EMPTY_HALFWORD;
+	unsafe { ternary::copy(mut_ptr!(halfword), tryte_ptr!(inst, 2), HALFWORD_ISIZE) };
+	halfword
+}
+
+fn inst_addr(inst: Word) -> Addr {
+	unsafe { ternary::read_int(ptr!(inst), WORD_ISIZE) as Addr }
 }
 
 impl Drop for VM {
