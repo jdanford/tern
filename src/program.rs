@@ -9,9 +9,9 @@ use parser::*;
 
 #[derive(Debug)]
 pub struct Program {
-	pc: usize,
-	instructions: Vec<Instruction>,
-	labels: HashMap<Label, Addr>,
+	pub pc: usize,
+	pub instructions: Vec<Instruction>,
+	pub labels: HashMap<Label, Addr>,
 }
 
 impl Program {

@@ -14,6 +14,7 @@ pub mod registers;
 pub mod instructions;
 pub mod parser;
 pub mod program;
+pub mod encoder;
 pub mod vm;
 
 #[cfg(test)]

@@ -3,10 +3,14 @@ use std::io;
 use trit::Trit;
 use types::*;
 
-pub unsafe fn clear(trits: *mut Trit, len: isize) {
+pub unsafe fn set_all(trits: *mut Trit, trit: Trit, len: isize) {
     for i in 0..len {
-        *trits.offset(i) = Trit::Zero;
+        set_trit(trits, i, trit);
     }
+}
+
+pub unsafe fn clear(trits: *mut Trit, len: isize) {
+    set_all(trits, Trit::Zero, len);
 }
 
 pub unsafe fn get_trit(trits: *mut Trit, i: isize) -> Trit {

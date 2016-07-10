@@ -13,6 +13,7 @@ const PC_START: Addr = 0;
 pub struct VM {
 	pub registers: [Word; REGISTER_COUNT],
 	pub memory: *mut Trit,
+	pub memory_size: usize,
 	pub pc: Addr,
 	pub running: bool
 }
@@ -29,6 +30,7 @@ impl VM {
 		VM {
 			registers: registers,
 			memory: memory,
+			memory_size: memory_size,
 			pc: PC_START,
 			running: false
 		}
