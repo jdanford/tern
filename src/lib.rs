@@ -16,6 +16,7 @@ pub mod vm;
 pub mod parser;
 pub mod program;
 pub mod encoder;
+pub mod text;
 
 #[cfg(test)]
 mod test;
