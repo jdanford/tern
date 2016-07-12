@@ -113,6 +113,7 @@ pub unsafe fn encode_char(trits: *mut Trit, c: char) -> usize {
 
 pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
 	let mut word = EMPTY_WORD;
+	let invalid_result = (char::REPLACEMENT_CHARACTER, 1);
 
 	let high_trit = *trits.offset(5);
 	let next_high_trit = *trits.offset(4);
@@ -123,7 +124,9 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
 		}
 
 		(Trit::Pos, Trit::Zero) => {
-			assert_eq!(*trits.offset(11), Trit::Neg);
+			if *trits.offset(11) != Trit::Neg {
+				return invalid_result;
+			}
 
 			ternary::copy(mut_ptr!(word), tryte_offset!(trits, 0), DOUBLE_START_TRITS as isize);
 
@@ -134,8 +137,9 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
 		}
 
 		(Trit::Pos, Trit::Pos) => {
-			assert_eq!(*trits.offset(11), Trit::Neg);
-			assert_eq!(*trits.offset(17), Trit::Neg);
+			if *trits.offset(11) != Trit::Neg || *trits.offset(17) != Trit::Neg {
+				return invalid_result;
+			}
 
 			ternary::copy(mut_ptr!(word), tryte_offset!(trits, 0), TRIPLE_START_TRITS as isize);
 
@@ -149,7 +153,7 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
 		}
 
 		_ => {
-			panic!("invalid tryte")
+			return invalid_result;
 		}
 	};
 
