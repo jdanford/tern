@@ -73,8 +73,10 @@ pub unsafe fn encode_char(trits: *mut Trit, c: char) -> usize {
 		_ => (0, 0),
 	};
 
-	let shifted_codepoint = shift_codepoint(codepoint, codepoint_offset);
-	ternary::write_int(mut_ptr!(word), shifted_codepoint as isize, WORD_ISIZE);
+	if len > 0 {
+		let shifted_codepoint = shift_codepoint(codepoint, codepoint_offset);
+		ternary::write_int(mut_ptr!(word), shifted_codepoint as isize, WORD_ISIZE);
+	}
 
 	match len {
 		1 => {
