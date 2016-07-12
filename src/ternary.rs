@@ -27,6 +27,33 @@ pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
     }
 }
 
+pub unsafe fn copy_blocks(src: *const Trit, size: usize, start: usize, blocks: Vec<(*mut Trit, usize)>) {
+    let mut blocks = blocks.clone();
+
+    let mut start = start;
+    loop {
+        let (_, block_size) = blocks[0];
+        if start <= block_size {
+            break;
+        }
+
+        start = start.saturating_sub(block_size);
+        blocks.remove(0);
+    }
+
+    let mut i = 0;
+    while i < size {
+        let (block, block_size) = blocks.remove(0);
+        let mut j = start;
+        start = start.saturating_sub(block_size);
+        while j < block_size && i < size {
+            *block.offset(j as isize) = *src.offset(i as isize);
+            i += 1;
+            j += 1;
+        }
+    }
+}
+
 pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I) where I: IntoIterator<Item=Trit> {
     for (i, trit) in iterable.into_iter().enumerate() {
         *dest.offset(i as isize) = trit;

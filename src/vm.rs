@@ -64,23 +64,20 @@ impl VM {
 		self.init();
 
 		while self.running {
-			self.step();
+			unsafe { self.step() };
 		}
 	}
 
-	fn next_inst(&mut self) -> Word {
+	unsafe fn next_inst(&mut self) -> Word {
 		let mut inst = [Trit::Zero; WORD_SIZE];
-
-		unsafe {
-			let location = self.memory.offset(self.pc as isize);
-			ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
-		}
+		let location = self.memory.offset(self.pc as isize);
+		ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
 
 		self.pc += WORD_SIZE;
 		inst
 	}
 
-	pub fn step(&mut self) {
+	pub unsafe fn step(&mut self) {
 		let inst = self.next_inst();
 		let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
 		let opcode = Opcode::from(t0);
@@ -106,6 +103,10 @@ impl VM {
 
 			Opcode::Mul => {
 				self.mul(Register::from(t1), Register::from(t2));
+			}
+
+			Opcode::Shf => {
+				self.shf(Register::from(t1), Register::from(t2), Register::from(t3));
 			}
 
 			Opcode::Jmp => {
@@ -134,70 +135,88 @@ impl VM {
 		self.clear(Register::ZERO);
 	}
 
-	fn mov(&mut self, r_dest: Register, r_src: Register) {
+	unsafe fn mov(&mut self, r_dest: Register, r_src: Register) {
 		let dest = self.dest(r_dest);
 		let src = self.src(r_src);
-		unsafe { ternary::copy(dest, src, WORD_ISIZE); }
+		ternary::copy(dest, src, WORD_ISIZE);
 	}
 
-	fn movi(&mut self, r_dest: Register, halfword: Halfword) {
+	unsafe fn movi(&mut self, r_dest: Register, halfword: Halfword) {
 		let dest = self.dest(r_dest);
-		unsafe {
-			ternary::clear(dest, WORD_ISIZE);
-			ternary::copy(dest, ptr!(halfword), HALFWORD_ISIZE);
-		}
+		ternary::clear(dest, WORD_ISIZE);
+		ternary::copy(dest, ptr!(halfword), HALFWORD_ISIZE);
 	}
 
-	fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+	unsafe fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
 		let dest = self.dest(r_dest);
 		let lhs = self.src(r_lhs);
 		let rhs = self.src(r_rhs);
 
-		unsafe {
-			ternary::clear(dest, WORD_ISIZE);
-			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
-			self.clear(Register::HI);
-			ternary::set_trit(self.dest(Register::HI), 0, carry);
-		};
+		ternary::clear(dest, WORD_ISIZE);
+		let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
+		self.clear(Register::HI);
+		ternary::set_trit(self.dest(Register::HI), 0, carry);
 	}
 
-	fn addi(&mut self, r_dest: Register, halfword: Halfword) {
+	unsafe fn addi(&mut self, r_dest: Register, halfword: Halfword) {
 		let dest = self.dest(r_dest);
 		let lhs = dest;
 
 		let mut word = EMPTY_WORD;
 		let rhs = mut_ptr!(word);
 
-		unsafe {
-			ternary::copy(rhs, ptr!(halfword), HALFWORD_ISIZE);
-			let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
-			self.clear(Register::HI);
-			ternary::set_trit(self.dest(Register::HI), 0, carry);
-		};
+		ternary::copy(rhs, ptr!(halfword), HALFWORD_ISIZE);
+		let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
+		self.clear(Register::HI);
+		ternary::set_trit(self.dest(Register::HI), 0, carry);
 	}
 
-	fn mul(&mut self, r_lhs: Register, r_rhs: Register) {
+	unsafe fn mul(&mut self, r_lhs: Register, r_rhs: Register) {
 		let lhs = self.src(r_lhs);
 		let rhs = self.src(r_rhs);
 
-		unsafe {
-			self.clear(Register::LO);
-			self.clear(Register::HI);
-			ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
+		self.clear(Register::LO);
+		self.clear(Register::HI);
+		ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
+	}
+
+	unsafe fn shf(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+		let mut word = EMPTY_WORD;
+		ternary::copy(mut_ptr!(word), self.src(r_lhs), WORD_ISIZE);
+
+		let offset = self.read(r_rhs);
+		let shifted_offset = offset + WORD_ISIZE;
+		if shifted_offset < 0 || shifted_offset > WORD_ISIZE * 3 {
+			return;
 		}
+
+		self.clear(Register::LO);
+		self.clear(r_dest);
+		self.clear(Register::HI);
+
+		let src = ptr!(word);
+		let lo = self.dest(Register::LO);
+		let mid = self.dest(r_dest);
+		let hi = self.dest(Register::HI);
+
+		ternary::copy_blocks(src, WORD_SIZE, shifted_offset as usize, vec![
+			(lo, WORD_SIZE),
+			(mid, WORD_SIZE),
+			(hi, WORD_SIZE),
+		]);
 	}
 
 	fn jmp(&mut self, addr: Addr) {
 		self.pc = addr;
 	}
 
-	fn call(&mut self, addr: Addr) {
+	unsafe fn call(&mut self, addr: Addr) {
 		let pc = self.pc as isize;
 		self.write(Register::RA, pc);
 		self.jmp(addr);
 	}
 
-	fn ret(&mut self) {
+	unsafe fn ret(&mut self) {
 		let addr = self.read(Register::RA) as Addr;
 		self.jmp(addr);
 	}

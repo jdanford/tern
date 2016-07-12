@@ -61,6 +61,26 @@ fn ternary_read_int() { unsafe {
 } }
 
 #[test]
+fn ternary_copy_blocks() { unsafe {
+	let trits = [Trit::Neg, Trit::Pos, Trit::Neg, Trit::Pos, Trit::Neg, Trit::Pos];
+	let mut block1 = [Trit::Zero; 6];
+	let mut block2 = [Trit::Zero; 6];
+	let mut block3 = [Trit::Zero; 6];
+
+	ternary::copy_blocks(ptr!(trits), 6, 4, vec![
+		(mut_ptr!(block1), 6),
+		(mut_ptr!(block2), 6),
+		(mut_ptr!(block3), 6),
+	]);
+
+	let block1_expected = [Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Neg, Trit::Pos];
+	let block2_expected = [Trit::Neg, Trit::Pos, Trit::Neg, Trit::Pos, Trit::Zero, Trit::Zero];
+
+	assert_eq!(block1, block1_expected);
+	assert_eq!(block2, block2_expected);
+} }
+
+#[test]
 fn ternary_get_lst() { unsafe {
 	let mut trits = EMPTY_TRYTE;
 

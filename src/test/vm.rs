@@ -72,3 +72,28 @@ fn vm_mul() {
 	assert_eq!(vm.read(lhs), -15);
 	assert_eq!(vm.read(rhs), -3);
 }
+
+#[test]
+fn vm_shf() {
+	let mut vm = VM::new(WORD_SIZE * 2);
+
+	let dest = Register::A0;
+	let lhs = Register::A1;
+	let rhs = Register::A2;
+
+	vm.write(lhs, 141_214_768_240);
+	vm.write(rhs, 2);
+	vm.write(Register::LO, 123);
+	vm.write(Register::HI, 456);
+
+	ternary::write_trytes(vm.memory, vec![
+		Opcode::Shf as isize, dest as isize, lhs as isize, rhs as isize,
+		Opcode::Halt as isize
+	]);
+
+	vm.run();
+
+	assert_eq!(vm.read(Register::LO), 0);
+	assert_eq!(vm.read(Register::HI), 4);
+	assert_eq!(vm.read(dest), 141_214_768_236);
+}
