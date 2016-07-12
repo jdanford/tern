@@ -105,6 +105,18 @@ impl VM {
 				self.mul(Register::from(t1), Register::from(t2));
 			}
 
+			Opcode::Not => {
+				self.not(Register::from(t1), Register::from(t2));
+			}
+
+			Opcode::And => {
+				self.and(Register::from(t1), Register::from(t2), Register::from(t3));
+			}
+
+			Opcode::Or => {
+				self.or(Register::from(t1), Register::from(t2), Register::from(t3));
+			}
+
 			Opcode::Shf => {
 				self.shf(Register::from(t1), Register::from(t2), Register::from(t3));
 			}
@@ -178,6 +190,18 @@ impl VM {
 		self.clear(Register::LO);
 		self.clear(Register::HI);
 		ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
+	}
+
+	unsafe fn not(&mut self, r_dest: Register, r_src: Register) {
+		ternary::map(self.dest(r_dest), self.src(r_src), WORD_ISIZE, |t| -t);
+	}
+
+	unsafe fn and(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+		ternary::zip(self.dest(r_dest), self.src(r_lhs), self.src(r_rhs), WORD_ISIZE, |t1, t2| t1 & t2);
+	}
+
+	unsafe fn or(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+		ternary::zip(self.dest(r_dest), self.src(r_lhs), self.src(r_rhs), WORD_ISIZE, |t1, t2| t1 | t2);
 	}
 
 	unsafe fn shf(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {

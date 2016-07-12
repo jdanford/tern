@@ -74,6 +74,66 @@ fn vm_mul() {
 }
 
 #[test]
+fn vm_not() {
+	let mut vm = VM::new(WORD_SIZE * 2);
+
+	let dest = Register::A0;
+	let src = Register::A1;
+
+	vm.write(src, 84728860944); // 10T010T010T010T010T010T0
+
+	ternary::write_trytes(vm.memory, vec![
+		Opcode::Not as isize, dest as isize, src as isize, 0,
+		Opcode::Halt as isize
+	]);
+
+	vm.run();
+
+	assert_eq!(vm.read(dest), -84728860944); // T010T010T010T010T010T010
+}
+
+#[test]
+fn vm_and() {
+	let mut vm = VM::new(WORD_SIZE * 2);
+
+	let dest = Register::A0;
+	let lhs = Register::A1;
+	let rhs = Register::A2;
+	vm.write(lhs, 141214768227); // 111111111111111111111000
+	vm.write(rhs, 120294061834); // 11T111111111111111111111
+
+	ternary::write_trytes(vm.memory, vec![
+		Opcode::And as isize, dest as isize, lhs as isize, rhs as isize,
+		Opcode::Halt as isize
+	]);
+
+	vm.run();
+
+	assert_eq!(vm.read(dest), 120294061821); // 11T111111111111111111000
+}
+
+#[test]
+fn vm_or() {
+	let mut vm = VM::new(WORD_SIZE * 2);
+
+	let dest = Register::A0;
+	let lhs = Register::A1;
+	let rhs = Register::A2;
+
+	vm.write(lhs, -139492630440); // TTTT0000TTTT000011110000
+	vm.write(rhs, 84728860944);   // 10T010T010T010T010T010T0
+
+	ternary::write_trytes(vm.memory, vec![
+		Opcode::And as isize, dest as isize, lhs as isize, rhs as isize,
+		Opcode::Halt as isize
+	]);
+
+	vm.run();
+
+	assert_eq!(vm.read(dest), -104619473316); // T0T00000T0T0000010T00000
+}
+
+#[test]
 fn vm_shf() {
 	let mut vm = VM::new(WORD_SIZE * 2);
 
@@ -81,7 +141,7 @@ fn vm_shf() {
 	let lhs = Register::A1;
 	let rhs = Register::A2;
 
-	vm.write(lhs, 141_214_768_240);
+	vm.write(lhs, 141_214_768_240); // 111111111111111111111111
 	vm.write(rhs, 2);
 	vm.write(Register::LO, 123);
 	vm.write(Register::HI, 456);
@@ -94,6 +154,6 @@ fn vm_shf() {
 	vm.run();
 
 	assert_eq!(vm.read(Register::LO), 0);
-	assert_eq!(vm.read(Register::HI), 4);
-	assert_eq!(vm.read(dest), 141_214_768_236);
+	assert_eq!(vm.read(Register::HI), 4);       // 000000000000000000000011
+	assert_eq!(vm.read(dest), 141_214_768_236); // 111111111111111111111100
 }

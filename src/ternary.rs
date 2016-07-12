@@ -27,6 +27,20 @@ pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
     }
 }
 
+pub unsafe fn map<F>(dest: *mut Trit, src: *const Trit, len: isize, f: F) where F: Fn(Trit) -> Trit {
+    for i in 0..len {
+        *dest.offset(i) = f(*src.offset(i));
+    }
+}
+
+pub unsafe fn zip<F>(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize, f: F) where F: Fn(Trit, Trit) -> Trit {
+    for i in 0..len {
+        let l = *lhs.offset(i);
+        let r = *rhs.offset(i);
+        *dest.offset(i) = f(l, r);
+    }
+}
+
 pub unsafe fn copy_blocks(src: *const Trit, size: usize, start: usize, blocks: Vec<(*mut Trit, usize)>) {
     let mut blocks = blocks.clone();
 
