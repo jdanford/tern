@@ -9,6 +9,7 @@ use program::instructions::Instruction;
 use program::DecodedProgram;
 use program::parser::{CodeDecl, DataDecl};
 use util::next_aligned_addr;
+use vm::PROGRAM_MAGIC_NUMBER;
 
 #[derive(Debug)]
 pub enum EncodeError {
@@ -66,11 +67,26 @@ impl EncodedProgram {
 			return Err(EncodeError::InsufficientMemory(required_size, self.memory_size))
 		}
 
+		unsafe { ternary::from_int(self.memory, PROGRAM_MAGIC_NUMBER, WORD_ISIZE) };
+		self.pc += WORD_SIZE;
+
+		// save space for pc start
+		let pc_start_offset = self.pc;
+		self.pc += WORD_SIZE;
+
 		let data_size = try!(self.encode_data_section(&program.data[..]));
 		self.pc += data_size;
 
+		self.pc = next_aligned_addr(self.pc, WORD_SIZE);
+		let pc_start = self.pc;
+
 		let code_size = try!(self.encode_code_section(&program.code[..]));
 		self.pc += code_size;
+
+		unsafe {
+			let local_memory = self.memory.offset(pc_start_offset as isize);
+			ternary::from_int(local_memory, pc_start as isize, WORD_ISIZE);
+		}
 
 		self.patch_addrs();
 

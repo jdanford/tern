@@ -8,7 +8,7 @@ use types::*;
 use opcodes::Opcode;
 use registers::{Register, REGISTER_COUNT};
 
-const PC_START: Addr = 0;
+pub const PROGRAM_MAGIC_NUMBER: isize = 70607384120; // 1T1T1T1T1T1T1T1T1T1T1T1T
 
 pub struct VM {
 	pub registers: [Word; REGISTER_COUNT],
@@ -31,7 +31,7 @@ impl VM {
 			registers: registers,
 			memory: memory,
 			memory_size: memory_size,
-			pc: PC_START,
+			pc: 0,
 			running: false
 		}
 	}
@@ -57,6 +57,12 @@ impl VM {
 	}
 
 	pub fn init(&mut self) {
+		let magic_number = unsafe { ternary::to_int(self.memory, WORD_ISIZE) };
+		assert_eq!(magic_number, PROGRAM_MAGIC_NUMBER);
+
+		let pc_start = unsafe { ternary::to_int(self.memory.offset(WORD_ISIZE), WORD_ISIZE) } as Addr;
+		self.pc = pc_start;
+
 		self.running = true;
 	}
 
