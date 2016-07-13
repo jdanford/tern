@@ -11,12 +11,8 @@ pub mod ternary;
 pub mod types;
 pub mod opcodes;
 pub mod registers;
-pub mod instructions;
 pub mod vm;
-pub mod static_data;
-pub mod parser;
 pub mod program;
-pub mod encoder;
 pub mod text;
 mod util;
 

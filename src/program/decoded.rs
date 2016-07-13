@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use parser::*;
+use program::parser::*;
 use util::next_aligned_addr;
 
 #[derive(Clone, Debug)]
@@ -12,15 +12,15 @@ pub enum ReadMode {
 }
 
 #[derive(Clone, Debug)]
-pub struct Program {
+pub struct DecodedProgram {
 	read_mode: ReadMode,
 	pub code: Vec<CodeDecl>,
 	pub data: Vec<DataDecl>,
 }
 
-impl Program {
-	pub fn new() -> Program {
-		Program {
+impl DecodedProgram {
+	pub fn new() -> DecodedProgram {
+		DecodedProgram {
 			read_mode: ReadMode::Code,
 			code: Vec::new(),
 			data: Vec::new(),

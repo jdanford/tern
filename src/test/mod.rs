@@ -1,5 +1,5 @@
 mod trit;
 mod ternary;
 mod vm;
-mod encoder;
+mod program;
 mod text;

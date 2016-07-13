@@ -5,9 +5,9 @@ use ternary;
 use types::*;
 use opcodes::Opcode;
 use registers::Register;
-use instructions::Instruction;
-use parser::{CodeDecl, DataDecl};
-use program::Program;
+use program::instructions::Instruction;
+use program::DecodedProgram;
+use program::parser::{CodeDecl, DataDecl};
 use util::next_aligned_addr;
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ enum Patch {
 	Absolute(String),
 }
 
-pub struct Encoder {
+pub struct EncodedProgram {
 	memory: *mut Trit,
 	memory_size: usize,
 	labels: HashMap<String, Addr>,
@@ -31,9 +31,9 @@ pub struct Encoder {
 	pc: Addr,
 }
 
-impl Encoder {
-	pub fn new(memory: *mut Trit, memory_size: usize) -> Encoder {
-		Encoder {
+impl EncodedProgram {
+	pub fn new(memory: *mut Trit, memory_size: usize) -> EncodedProgram {
+		EncodedProgram {
 			memory: memory,
 			memory_size: memory_size,
 			labels: HashMap::new(),
@@ -46,6 +46,12 @@ impl Encoder {
 		self.labels.insert(label, addr);
 	}
 
+	pub fn insert_label(&mut self, label: String) {
+		self.pc = next_aligned_addr(self.pc, WORD_SIZE);
+		let addr = self.pc;
+		self.labels.insert(label, addr);
+	}
+
 	pub fn define_relative_patch(&mut self, ptr: *mut Trit, label: String) {
 		self.patches.insert(ptr, Patch::Relative(label));
 	}
@@ -54,7 +60,7 @@ impl Encoder {
 		self.patches.insert(ptr, Patch::Absolute(label));
 	}
 
-	pub fn encode(&mut self, program: Program) -> Result<usize, EncodeError> {
+	pub fn encode(&mut self, program: DecodedProgram) -> Result<usize, EncodeError> {
 		let required_size = program.size();
 		if required_size > self.memory_size {
 			return Err(EncodeError::InsufficientMemory(required_size, self.memory_size))
@@ -88,8 +94,7 @@ impl Encoder {
 		for ref data_decl in all_data {
 			match **data_decl {
 				DataDecl::Label(ref label) => {
-					let addr = self.pc;
-					self.define_label(label.clone(), addr);
+					self.insert_label(label.clone());
 				}
 
 				DataDecl::Data(ref data) => {
@@ -115,11 +120,12 @@ impl Encoder {
 		for ref code_decl in all_code {
 			match **code_decl {
 				CodeDecl::Label(ref label) => {
-					let addr = self.pc;
-					self.define_label(label.clone(), addr);
+					self.insert_label(label.clone());
 				}
 
 				CodeDecl::Instruction(ref instruction) => {
+					assert_eq!(self.pc % WORD_SIZE, 0);
+
 					unsafe {
 						let local_memory = self.memory.offset(self.pc as isize);
 						try!(self.encode_instruction(local_memory, instruction));

@@ -2,8 +2,15 @@ use registers::Register;
 use util::*;
 
 #[test]
-fn encoder_mov() {
+fn program_mov() {
 	let code = r#"
+	.data
+	@tryte 1
+	@tryte 2
+	@tryte 3
+	@string "Hello!"
+
+	.code
 	start:
 		movi $a0, 103
 		jmp end

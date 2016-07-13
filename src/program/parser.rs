@@ -4,8 +4,8 @@ use std::io;
 use ternary;
 use types::*;
 use registers::Register;
-use instructions::Instruction;
-use static_data::StaticData;
+use program::instructions::Instruction;
+use program::data::StaticData;
 
 mod patterns {
 	pub static COMMA: &'static str = r",\s*";
