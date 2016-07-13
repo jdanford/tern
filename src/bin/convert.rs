@@ -1,6 +1,5 @@
 extern crate tern;
 
-use std::env;
 use std::io;
 
 use tern::trit::Trit;
@@ -16,9 +15,6 @@ macro_rules! mut_ptr {
 }
 
 fn main() {
-	let arg = env::args().nth(1).unwrap_or_default();
-	let is_ternary_mode = arg == "--ternary";
-
 	loop {
 		let mut trits = [Trit::Zero; WORD_SIZE];
 		let mut input = String::new();
@@ -30,7 +26,7 @@ fn main() {
 					break;
 				}
 
-				if is_ternary_mode {
+				if s.starts_with("0t") {
 					unsafe {
 						ternary::write_str(mut_ptr!(trits), &s[..]);
 						println!("=> {}", ternary::read_int(ptr!(trits), WORD_ISIZE));
