@@ -131,9 +131,9 @@ fn ternary_multiply() { unsafe {
 	let mut b = EMPTY_TRYTE;
 	ternary::from_str(mut_ptr!(b), "0001T0");
 
-	let mut c = EMPTY_HALFWORD;
+	let mut c = EMPTY_HALF;
 
-	let mut d = EMPTY_HALFWORD;
+	let mut d = EMPTY_HALF;
 	ternary::from_str(mut_ptr!(d), "0000T11T1T00");
 
 	ternary::multiply(mut_ptr!(c), ptr!(a), ptr!(b), 6);

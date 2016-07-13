@@ -11,7 +11,7 @@ use parser::*;
 pub struct Program {
 	pub pc: usize,
 	pub instructions: Vec<Instruction>,
-	pub labels: HashMap<Label, Addr>,
+	pub labels: HashMap<String, Addr>,
 }
 
 impl Program {
@@ -38,7 +38,7 @@ impl Program {
 		Ok(())
 	}
 
-	pub fn to_str(&mut self, s: &str) -> Result<(), ParseError> {
+	pub fn read_str(&mut self, s: &str) -> Result<(), ParseError> {
 		for raw_line in s.lines() {
 			try!(self.read_line(raw_line));
 		}
@@ -51,6 +51,8 @@ impl Program {
 
 		if !line.is_empty() {
 			match try!(parse_line(line)) {
+				ParsedLine::StaticData(_) => {}
+
 				ParsedLine::Label(label) => {
 					self.labels.insert(label, self.pc);
 				}
@@ -80,7 +82,7 @@ impl Program {
 				}
 			}
 
-			println!("{:?}", instruction);
+			println!("{} {:?}", pc, instruction);
 			pc += instruction.size();
 		}
 	}

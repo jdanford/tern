@@ -11,14 +11,14 @@ use program::Program;
 #[derive(Debug)]
 pub enum EncodeError {
 	InsufficientMemory,
-	InvalidLabel(Label),
+	InvalidLabel(String),
 	IntOutOfRange(isize, isize, isize),
 }
 
 pub struct Encoder {
 	memory: *mut Trit,
 	memory_size: usize,
-	labels: HashMap<Label, Addr>,
+	labels: HashMap<String, Addr>,
 	pc: Addr,
 }
 
@@ -32,7 +32,7 @@ impl Encoder {
 		}
 	}
 
-	fn add_labels(&mut self, labels: HashMap<Label, Addr>) {
+	fn add_labels(&mut self, labels: HashMap<String, Addr>) {
 		for (label, &addr) in labels.iter() {
 			self.labels.insert(label.clone(), addr);
 		}
@@ -75,7 +75,7 @@ impl Encoder {
 			Instruction::Movi(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Movi));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Movw(r, word) => {
@@ -136,7 +136,7 @@ impl Encoder {
 			Instruction::Addi(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Addi));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Mul(r1, r2) => {
@@ -148,7 +148,7 @@ impl Encoder {
 			Instruction::Muli(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Muli));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Not(r1, r2) => {
@@ -167,7 +167,7 @@ impl Encoder {
 			Instruction::Andi(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Andi));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Or(r1, r2, r3) => {
@@ -180,7 +180,7 @@ impl Encoder {
 			Instruction::Ori(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Ori));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Shf(r1, r2, r3) => {
@@ -193,7 +193,7 @@ impl Encoder {
 			Instruction::Shfi(r, half) => {
 				try!(self.encode_opcode(memory, Opcode::Shfi));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
-				try!(self.encode_halfword(tryte_offset!(memory, 2), half));
+				try!(self.encode_half(tryte_offset!(memory, 2), half));
 			}
 
 			Instruction::Cmp(r1, r2, r3) => {
@@ -294,8 +294,8 @@ impl Encoder {
 		Ok(())
 	}
 
-	unsafe fn encode_halfword(&self, memory: *mut Trit, halfword: Halfword) -> Result<(), EncodeError> {
-		ternary::copy(memory, ptr!(halfword), HALFWORD_ISIZE);
+	unsafe fn encode_half(&self, memory: *mut Trit, half: Half) -> Result<(), EncodeError> {
+		ternary::copy(memory, ptr!(half), HALF_ISIZE);
 		Ok(())
 	}
 
@@ -304,13 +304,13 @@ impl Encoder {
 		Ok(())
 	}
 
-	unsafe fn encode_label(&self, memory: *mut Trit, label: &Label) -> Result<(), EncodeError> {
+	unsafe fn encode_label(&self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
 		let addr = try!(self.label_addr(label));
 		ternary::from_int(memory, addr as isize, WORD_ISIZE);
 		Ok(())
 	}
 
-	unsafe fn encode_relative_label(&self, memory: *mut Trit, label: &Label) -> Result<(), EncodeError> {
+	unsafe fn encode_relative_label(&self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
 		let reladdr = try!(self.relative_addr(label));
 		ternary::from_int(memory, reladdr, WORD_ISIZE);
 		Ok(())
@@ -324,14 +324,14 @@ impl Encoder {
 		}
 	}
 
-	pub fn label_addr(&self, label: &Label) -> Result<Addr, EncodeError> {
+	pub fn label_addr(&self, label: &String) -> Result<Addr, EncodeError> {
 		match self.labels.get(label) {
 			Some(&addr) => Ok(addr),
 			_ => Err(EncodeError::InvalidLabel(label.clone()))
 		}
 	}
 
-	pub fn relative_addr(&self, label: &Label) -> Result<RelAddr, EncodeError> {
+	pub fn relative_addr(&self, label: &String) -> Result<RelAddr, EncodeError> {
 		let addr = try!(self.label_addr(label));
 		Ok(addr as RelAddr - self.pc as RelAddr)
 	}

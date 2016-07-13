@@ -15,8 +15,18 @@ mod patterns {
 }
 
 #[derive(Debug)]
+pub enum StaticData {
+	Tryte(Tryte),
+	Half(Half),
+	Word(Word),
+	Char(char),
+	String(String),
+}
+
+#[derive(Debug)]
 pub enum ParsedLine {
-	Label(Label),
+	StaticData(StaticData),
+	Label(String),
 	Instruction(Instruction),
 }
 
@@ -103,23 +113,23 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
 	}
 }
 
-fn parse_halfword(s: &str) -> Result<Halfword, ParseError> {
-	let mut halfword = EMPTY_HALFWORD;
+fn parse_half(s: &str) -> Result<Half, ParseError> {
+	let mut half = EMPTY_HALF;
 
 	if let Ok(int) = s.parse() {
-		assert!(HALFWORD_MIN <= int && int <= HALFWORD_MAX);
-		unsafe { ternary::from_int(mut_ptr!(halfword), int, HALFWORD_ISIZE) };
-		return Ok(halfword)
+		assert!(HALF_MIN <= int && int <= HALF_MAX);
+		unsafe { ternary::from_int(mut_ptr!(half), int, HALF_ISIZE) };
+		return Ok(half)
 	}
 
 	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
 	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
-		assert!(trit_str.len() <= HALFWORD_SIZE);
-		unsafe { ternary::from_str(mut_ptr!(halfword), trit_str) };
-		Ok(halfword)
+		assert!(trit_str.len() <= HALF_SIZE);
+		unsafe { ternary::from_str(mut_ptr!(half), trit_str) };
+		Ok(half)
 	} else {
-		Err(ParseError::InvalidTernary(s.to_string(), HALFWORD_SIZE))
+		Err(ParseError::InvalidTernary(s.to_string(), HALF_SIZE))
 	}
 }
 
@@ -154,7 +164,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"movi" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Movi(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Movi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"movw" => {
@@ -199,7 +209,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"addi" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Addi(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Addi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"mul" => {
@@ -209,7 +219,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"muli" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Muli(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Muli(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"not" => {
@@ -224,7 +234,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"andi" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Andi(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Andi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"or" => {
@@ -234,7 +244,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"ori" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Ori(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Ori(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"shf" => {
@@ -244,7 +254,7 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
 		"shfi" => {
 			assert_eq!(arity, 2);
-			Ok(Instruction::Shfi(try!(parse_register(args[0])), try!(parse_halfword(args[1]))))
+			Ok(Instruction::Shfi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
 		}
 
 		"cmp" => {

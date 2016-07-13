@@ -4,7 +4,7 @@ use encoder::Encoder;
 
 pub fn vm_from_code(code: &str) -> Result<VM, String> {
 	let mut program = Program::new();
-	try!(program.to_str(code).map_err(|e| format!("{:?}", e)));
+	try!(program.read_str(code).map_err(|e| format!("{:?}", e)));
 
 	let vm = VM::new(program.pc);
 

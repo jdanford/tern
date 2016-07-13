@@ -88,8 +88,8 @@ impl VM {
 			}
 
 			Opcode::Movi => {
-				let halfword = inst_halfword(inst);
-				self.movi(Register::from(t1), halfword);
+				let half = inst_half(inst);
+				self.movi(Register::from(t1), half);
 			}
 
 			Opcode::Add => {
@@ -97,8 +97,8 @@ impl VM {
 			}
 
 			Opcode::Addi => {
-				let halfword = inst_halfword(inst);
-				self.addi(Register::from(t1), halfword);
+				let half = inst_half(inst);
+				self.addi(Register::from(t1), half);
 			}
 
 			Opcode::Mul => {
@@ -153,10 +153,10 @@ impl VM {
 		ternary::copy(dest, src, WORD_ISIZE);
 	}
 
-	unsafe fn movi(&mut self, r_dest: Register, halfword: Halfword) {
+	unsafe fn movi(&mut self, r_dest: Register, half: Half) {
 		let dest = self.dest(r_dest);
 		ternary::clear(dest, WORD_ISIZE);
-		ternary::copy(dest, ptr!(halfword), HALFWORD_ISIZE);
+		ternary::copy(dest, ptr!(half), HALF_ISIZE);
 	}
 
 	unsafe fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
@@ -170,14 +170,14 @@ impl VM {
 		ternary::set_trit(self.dest(Register::HI), 0, carry);
 	}
 
-	unsafe fn addi(&mut self, r_dest: Register, halfword: Halfword) {
+	unsafe fn addi(&mut self, r_dest: Register, half: Half) {
 		let dest = self.dest(r_dest);
 		let lhs = dest;
 
 		let mut word = EMPTY_WORD;
 		let rhs = mut_ptr!(word);
 
-		ternary::copy(rhs, ptr!(halfword), HALFWORD_ISIZE);
+		ternary::copy(rhs, ptr!(half), HALF_ISIZE);
 		let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
 		self.clear(Register::HI);
 		ternary::set_trit(self.dest(Register::HI), 0, carry);
@@ -246,10 +246,10 @@ impl VM {
 	}
 }
 
-fn inst_halfword(inst: Word) -> Halfword {
-	let mut halfword = EMPTY_HALFWORD;
-	unsafe { ternary::copy(mut_ptr!(halfword), tryte_ptr!(inst, 2), HALFWORD_ISIZE) };
-	halfword
+fn inst_half(inst: Word) -> Half {
+	let mut half = EMPTY_HALF;
+	unsafe { ternary::copy(mut_ptr!(half), tryte_ptr!(inst, 2), HALF_ISIZE) };
+	half
 }
 
 fn inst_addr(inst: Word) -> Addr {
