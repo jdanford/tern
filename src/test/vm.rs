@@ -1,159 +1,179 @@
-use ternary;
-use types::*;
-use opcodes::Opcode;
 use registers::Register;
-use vm::VM;
+use util::*;
 
 #[test]
 fn vm_mov() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		mov $a0, $a1
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let src = Register::A1;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A0, 40);
+			vm.write(Register::A1, 13);
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Mov as isize, dest as isize, src as isize, 0,
-		Opcode::Halt as isize
-	]);
+			vm.run();
 
-	vm.write(dest, 40);
-	vm.write(src, 13);
+			assert_eq!(vm.read(Register::A0), 13);
+			assert_eq!(vm.read(Register::A1), 13);
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(dest), 13);
-	assert_eq!(vm.read(src), 13);
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_add() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		add $a0, $a1, $a2
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let lhs = Register::A1;
-	let rhs = Register::A2;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A0, 0);
+			vm.write(Register::A1, 7);
+			vm.write(Register::A2, -2);
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Add as isize, dest as isize, lhs as isize, rhs as isize,
-		Opcode::Halt as isize
-	]);
+			vm.run();
 
-	vm.write(dest, 0);
-	vm.write(lhs, 7);
-	vm.write(rhs, -2);
+			assert_eq!(vm.read(Register::A0), 5);
+			assert_eq!(vm.read(Register::A1), 7);
+			assert_eq!(vm.read(Register::A2), -2);
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(dest), 5);
-	assert_eq!(vm.read(lhs), 7);
-	assert_eq!(vm.read(rhs), -2);
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_mul() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		mul $a1, $a2
+		halt
+	"#;
 
-	let lhs = Register::A0;
-	let rhs = Register::A1;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::HI, 999);
+			vm.write(Register::A1, -15);
+			vm.write(Register::A2, -3);
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Mul as isize, lhs as isize, rhs as isize, 0,
-		Opcode::Halt as isize
-	]);
+			vm.run();
 
-	vm.write(Register::HI, 999);
-	vm.write(lhs, -15);
-	vm.write(rhs, -3);
+			assert_eq!(vm.read(Register::LO), 45);
+			assert_eq!(vm.read(Register::HI), 0);
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(Register::LO), 45);
-	assert_eq!(vm.read(Register::HI), 0);
-	assert_eq!(vm.read(lhs), -15);
-	assert_eq!(vm.read(rhs), -3);
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_not() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		not $a0, $a1
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let src = Register::A1;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A1, 84728860944); // 10T010T010T010T010T010T0
 
-	vm.write(src, 84728860944); // 10T010T010T010T010T010T0
+			vm.run();
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Not as isize, dest as isize, src as isize, 0,
-		Opcode::Halt as isize
-	]);
+			assert_eq!(vm.read(Register::A0), -84728860944); // T010T010T010T010T010T010
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(dest), -84728860944); // T010T010T010T010T010T010
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_and() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		and $a0, $a1, $a2
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let lhs = Register::A1;
-	let rhs = Register::A2;
-	vm.write(lhs, 141214768227); // 111111111111111111111000
-	vm.write(rhs, 120294061834); // 11T111111111111111111111
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A1, 141214768227); // 111111111111111111111000
+			vm.write(Register::A2, 120294061834); // 11T111111111111111111111
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::And as isize, dest as isize, lhs as isize, rhs as isize,
-		Opcode::Halt as isize
-	]);
+			vm.run();
 
-	vm.run();
+			assert_eq!(vm.read(Register::A0), 120294061821); // 11T111111111111111111000
+		}
 
-	assert_eq!(vm.read(dest), 120294061821); // 11T111111111111111111000
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_or() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		and $a0, $a1, $a2
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let lhs = Register::A1;
-	let rhs = Register::A2;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A1, -139492630440); // TTTT0000TTTT000011110000
+			vm.write(Register::A2, 84728860944);   // 10T010T010T010T010T010T0
 
-	vm.write(lhs, -139492630440); // TTTT0000TTTT000011110000
-	vm.write(rhs, 84728860944);   // 10T010T010T010T010T010T0
+			vm.run();
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::And as isize, dest as isize, lhs as isize, rhs as isize,
-		Opcode::Halt as isize
-	]);
+			assert_eq!(vm.read(Register::A0), -104619473316); // 1TTT10T01TTT10T0111110T0
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(dest), -104619473316); // T0T00000T0T0000010T00000
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }
 
 #[test]
 fn vm_shf() {
-	let mut vm = VM::new(WORD_SIZE * 2);
+	let code = r#"
+		shf $a0, $a1, $a2
+		halt
+	"#;
 
-	let dest = Register::A0;
-	let lhs = Register::A1;
-	let rhs = Register::A2;
+	match vm_from_code(code) {
+		Ok(mut vm) => {
+			vm.write(Register::A1, 141_214_768_240);            // 111111111111111111111111
+			vm.write(Register::A2, 2);
+			vm.write(Register::LO, 123);
+			vm.write(Register::HI, 456);
 
-	vm.write(lhs, 141_214_768_240); // 111111111111111111111111
-	vm.write(rhs, 2);
-	vm.write(Register::LO, 123);
-	vm.write(Register::HI, 456);
+			vm.run();
 
-	ternary::write_trytes(vm.memory, vec![
-		Opcode::Shf as isize, dest as isize, lhs as isize, rhs as isize,
-		Opcode::Halt as isize
-	]);
+			assert_eq!(vm.read(Register::LO), 0);
+			assert_eq!(vm.read(Register::HI), 4);               // 000000000000000000000011
+			assert_eq!(vm.read(Register::A0), 141_214_768_236); // 111111111111111111111100
+		}
 
-	vm.run();
-
-	assert_eq!(vm.read(Register::LO), 0);
-	assert_eq!(vm.read(Register::HI), 4);       // 000000000000000000000011
-	assert_eq!(vm.read(dest), 141_214_768_236); // 111111111111111111111100
+		Err(e) => {
+			println!("{}", e);
+			assert!(false);
+		}
+	}
 }

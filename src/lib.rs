@@ -17,6 +17,7 @@ pub mod parser;
 pub mod program;
 pub mod encoder;
 pub mod text;
+mod util;
 
 #[cfg(test)]
 mod test;
