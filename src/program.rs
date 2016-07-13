@@ -38,7 +38,7 @@ impl Program {
 		Ok(())
 	}
 
-	pub fn read_str(&mut self, s: &str) -> Result<(), ParseError> {
+	pub fn to_str(&mut self, s: &str) -> Result<(), ParseError> {
 		for raw_line in s.lines() {
 			try!(self.read_line(raw_line));
 		}

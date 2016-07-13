@@ -28,16 +28,15 @@ fn main() {
 
 				if s.starts_with("0t") {
 					unsafe {
-						ternary::write_str(mut_ptr!(trits), &s[..]);
-						println!("=> {}", ternary::read_int(ptr!(trits), WORD_ISIZE));
+						ternary::from_str(mut_ptr!(trits), &s[..]);
+						println!("=> {}", ternary::to_int(ptr!(trits), WORD_ISIZE));
 					}
 				} else {
 					let n = s.parse::<isize>().unwrap();
 
 					unsafe {
-						ternary::write_int(mut_ptr!(trits), n, WORD_ISIZE);
-						print!("=> ");
-						ternary::print(ptr!(trits), io::stdout(), WORD_ISIZE);
+						ternary::from_int(mut_ptr!(trits), n, WORD_ISIZE);
+						println!("=> {}", ternary::to_str(ptr!(trits), WORD_ISIZE));
 					}
 				}
 			}

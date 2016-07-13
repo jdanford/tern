@@ -280,12 +280,12 @@ impl Encoder {
 	}
 
 	unsafe fn encode_opcode(&self, memory: *mut Trit, opcode: Opcode) -> Result<(), EncodeError> {
-		ternary::write_int(memory, opcode as isize, WORD_ISIZE);
+		ternary::from_int(memory, opcode as isize, WORD_ISIZE);
 		Ok(())
 	}
 
 	unsafe fn encode_register(&self, memory: *mut Trit, register: Register) -> Result<(), EncodeError> {
-		ternary::write_int(memory, register as isize, WORD_ISIZE);
+		ternary::from_int(memory, register as isize, WORD_ISIZE);
 		Ok(())
 	}
 
@@ -306,13 +306,13 @@ impl Encoder {
 
 	unsafe fn encode_label(&self, memory: *mut Trit, label: &Label) -> Result<(), EncodeError> {
 		let addr = try!(self.label_addr(label));
-		ternary::write_int(memory, addr as isize, WORD_ISIZE);
+		ternary::from_int(memory, addr as isize, WORD_ISIZE);
 		Ok(())
 	}
 
 	unsafe fn encode_relative_label(&self, memory: *mut Trit, label: &Label) -> Result<(), EncodeError> {
 		let reladdr = try!(self.relative_addr(label));
-		ternary::write_int(memory, reladdr, WORD_ISIZE);
+		ternary::from_int(memory, reladdr, WORD_ISIZE);
 		Ok(())
 	}
 

@@ -45,11 +45,11 @@ impl VM {
 	}
 
 	pub fn read(&mut self, r: Register) -> isize {
-		unsafe { ternary::read_int(self.src(r), WORD_ISIZE) }
+		unsafe { ternary::to_int(self.src(r), WORD_ISIZE) }
 	}
 
 	pub fn write(&mut self, r: Register, value: isize) {
-		unsafe { ternary::write_int(self.dest(r), value, WORD_ISIZE); }
+		unsafe { ternary::from_int(self.dest(r), value, WORD_ISIZE); }
 	}
 
 	pub fn clear(&mut self, r: Register) {
@@ -253,7 +253,7 @@ fn inst_halfword(inst: Word) -> Halfword {
 }
 
 fn inst_addr(inst: Word) -> Addr {
-	unsafe { ternary::read_int(ptr!(inst), WORD_ISIZE) as Addr }
+	unsafe { ternary::to_int(ptr!(inst), WORD_ISIZE) as Addr }
 }
 
 impl Drop for VM {

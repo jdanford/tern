@@ -42,13 +42,13 @@ pub fn encode_str(trits: *mut Trit, s: &str) -> usize {
 		i += unsafe { encode_char(trits.offset(offset), c) };
 	}
 
-	unsafe { ternary::write_int(trits, i as isize, WORD_ISIZE) };
+	unsafe { ternary::from_int(trits, i as isize, WORD_ISIZE) };
 
 	i
 }
 
 pub fn decode_str(trits: *const Trit) -> (String, usize) {
-	let len = unsafe { ternary::read_int(trits, WORD_ISIZE) };
+	let len = unsafe { ternary::to_int(trits, WORD_ISIZE) };
 	let mut s = String::new();
 
 	let mut i = 0;
@@ -75,7 +75,7 @@ pub unsafe fn encode_char(trits: *mut Trit, c: char) -> usize {
 
 	if len > 0 {
 		let shifted_codepoint = shift_codepoint(codepoint, codepoint_offset);
-		ternary::write_int(mut_ptr!(word), shifted_codepoint as isize, WORD_ISIZE);
+		ternary::from_int(mut_ptr!(word), shifted_codepoint as isize, WORD_ISIZE);
 	}
 
 	match len {
@@ -159,7 +159,7 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
 		}
 	};
 
-	let shifted_codepoint = ternary::read_int(ptr!(word), WORD_ISIZE) as i32;
+	let shifted_codepoint = ternary::to_int(ptr!(word), WORD_ISIZE) as i32;
 	let codepoint = unshift_codepoint(shifted_codepoint, codepoint_offset);
 	let c = char::from_u32(codepoint).unwrap_or(char::REPLACEMENT_CHARACTER);
 	(c, len)

@@ -1,5 +1,3 @@
-use std::io;
-
 use trit::Trit;
 use types::*;
 
@@ -74,22 +72,22 @@ pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I) where I: IntoItera
     }
 }
 
-pub unsafe fn write_str(dest: *mut Trit, s: &str) {
+pub unsafe fn from_str(dest: *mut Trit, s: &str) {
     copy_from_iter(dest, s.bytes().rev().map(Trit::from))
 }
 
-pub unsafe fn print<W: io::Write>(trits: *const Trit, mut writer: W, len: isize) {
+pub unsafe fn to_str(trits: *const Trit, len: isize) -> String {
+    let mut s = String::with_capacity(len as usize);
+
     for i in (0..len).rev() {
         let trit = *trits.offset(i);
-        let c: char = trit.into();
-        let container = [c as u8; 1];
-        let _ = writer.write(&container);
+        s.push(trit.into());
     }
 
-    let _ = writer.write(b"\n");
+    s
 }
 
-pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
+pub unsafe fn from_int(trits: *mut Trit, n: isize, len: isize) {
     let negative = n < 0;
     let mut n = n.abs();
 
@@ -108,7 +106,7 @@ pub unsafe fn write_int(trits: *mut Trit, n: isize, len: isize) {
     }
 }
 
-pub unsafe fn read_int(trits: *const Trit, len: isize) -> isize {
+pub unsafe fn to_int(trits: *const Trit, len: isize) -> isize {
     let mut n = *trits.offset(len - 1) as isize;
 
     for i in (0..len - 1).rev() {
@@ -122,16 +120,16 @@ pub unsafe fn read_int(trits: *const Trit, len: isize) -> isize {
 pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
     for (i, tryte) in iterable.into_iter().enumerate() {
         let offset = TRYTE_ISIZE * (i as isize);
-        unsafe { write_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
+        unsafe { from_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
     }
 }
 
 pub fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
     unsafe { (
-        read_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
-        read_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
-        read_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
-        read_int(tryte_offset!(trits, 3), TRYTE_ISIZE),
+        to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
+        to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
+        to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
+        to_int(tryte_offset!(trits, 3), TRYTE_ISIZE),
     ) }
 }
 

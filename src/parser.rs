@@ -88,7 +88,7 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
 
 	if let Ok(int) = s.parse() {
 		assert!(TRYTE_MIN <= int && int <= TRYTE_MAX);
-		unsafe { ternary::write_int(mut_ptr!(tryte), int, TRYTE_ISIZE) };
+		unsafe { ternary::from_int(mut_ptr!(tryte), int, TRYTE_ISIZE) };
 		return Ok(tryte)
 	}
 
@@ -96,7 +96,7 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
 	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= TRYTE_SIZE);
-		unsafe { ternary::write_str(mut_ptr!(tryte), trit_str) };
+		unsafe { ternary::from_str(mut_ptr!(tryte), trit_str) };
 		Ok(tryte)
 	} else {
 		Err(ParseError::InvalidTernary(s.to_string(), TRYTE_SIZE))
@@ -108,7 +108,7 @@ fn parse_halfword(s: &str) -> Result<Halfword, ParseError> {
 
 	if let Ok(int) = s.parse() {
 		assert!(HALFWORD_MIN <= int && int <= HALFWORD_MAX);
-		unsafe { ternary::write_int(mut_ptr!(halfword), int, HALFWORD_ISIZE) };
+		unsafe { ternary::from_int(mut_ptr!(halfword), int, HALFWORD_ISIZE) };
 		return Ok(halfword)
 	}
 
@@ -116,7 +116,7 @@ fn parse_halfword(s: &str) -> Result<Halfword, ParseError> {
 	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= HALFWORD_SIZE);
-		unsafe { ternary::write_str(mut_ptr!(halfword), trit_str) };
+		unsafe { ternary::from_str(mut_ptr!(halfword), trit_str) };
 		Ok(halfword)
 	} else {
 		Err(ParseError::InvalidTernary(s.to_string(), HALFWORD_SIZE))
@@ -128,7 +128,7 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
 
 	if let Ok(int) = s.parse() {
 		assert!(WORD_MIN <= int && int <= WORD_MAX);
-		unsafe { ternary::write_int(mut_ptr!(word), int, WORD_ISIZE) };
+		unsafe { ternary::from_int(mut_ptr!(word), int, WORD_ISIZE) };
 		return Ok(word)
 	}
 
@@ -136,7 +136,7 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
 	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= WORD_SIZE);
-		unsafe { ternary::write_str(mut_ptr!(word), trit_str) };
+		unsafe { ternary::from_str(mut_ptr!(word), trit_str) };
 		Ok(word)
 	} else {
 		Err(ParseError::InvalidTernary(s.to_string(), WORD_SIZE))
