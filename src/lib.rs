@@ -1,5 +1,3 @@
-#![feature(libc)]
-
 extern crate core;
 extern crate libc;
 extern crate regex;

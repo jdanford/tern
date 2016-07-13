@@ -1,7 +1,6 @@
 extern crate tern;
 
 use std::env;
-
 use tern::registers::Register;
 use tern::util::*;
 
