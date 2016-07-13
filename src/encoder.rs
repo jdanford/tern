@@ -6,11 +6,13 @@ use types::*;
 use opcodes::Opcode;
 use registers::Register;
 use instructions::Instruction;
+use parser::{CodeDecl, DataDecl};
 use program::Program;
+use util::next_aligned_addr;
 
 #[derive(Debug)]
 pub enum EncodeError {
-	InsufficientMemory,
+	InsufficientMemory(usize, usize),
 	InvalidLabel(String),
 	IntOutOfRange(isize, isize, isize),
 }
@@ -32,36 +34,73 @@ impl Encoder {
 		}
 	}
 
-	fn add_labels(&mut self, labels: HashMap<String, Addr>) {
-		for (label, &addr) in labels.iter() {
-			self.labels.insert(label.clone(), addr);
-		}
+	pub fn define_label(&mut self, label: String, addr: Addr) {
+		self.labels.insert(label, addr);
 	}
 
 	pub fn encode(&mut self, program: Program) -> Result<usize, EncodeError> {
-		let pc_start = self.pc;
-		let pc_end = pc_start + program.pc;
-		try!(self.check_pc(pc_end));
-
-		self.add_labels(program.labels);
-
-		for instruction in program.instructions.iter() {
-			let inst_size = instruction.size();
-
-			let new_pc = self.pc + inst_size;
-			try!(self.check_pc(new_pc));
-
-			unsafe {
-				let local_memory = self.memory.offset(self.pc as isize);
-				ternary::clear(local_memory, inst_size as isize);
-				try!(self.encode_instruction(local_memory, instruction));
-			};
-
-			self.pc = new_pc;
+		let required_size = program.size();
+		if required_size > self.memory_size {
+			return Err(EncodeError::InsufficientMemory(required_size, self.memory_size))
 		}
 
-		let size = self.pc - pc_start;
-		Ok(size)
+		let data_size = try!(self.encode_data_section(&program.data[..]));
+		self.pc += data_size;
+
+		let code_size = try!(self.encode_code_section(&program.code[..]));
+		self.pc += code_size;
+
+		Ok(self.pc)
+	}
+
+	pub fn encode_data_section(&mut self, all_data: &[DataDecl]) -> Result<usize, EncodeError> {
+		let mut total_size = 0;
+
+		for ref data_decl in all_data {
+			match **data_decl {
+				DataDecl::Label(ref label) => {
+					let addr = self.pc;
+					self.define_label(label.clone(), addr);
+				}
+
+				DataDecl::Data(ref data) => {
+					self.pc = next_aligned_addr(self.pc, data.alignment());
+
+					let size = unsafe {
+						let local_memory = self.memory.offset(self.pc as isize);
+						data.write(local_memory)
+					};
+
+					total_size += size;
+					self.pc += size;
+				}
+			}
+		}
+
+		Ok(total_size)
+	}
+
+	pub fn encode_code_section(&mut self, all_code: &[CodeDecl]) -> Result<usize, EncodeError> {
+		let mut total_size = 0;
+
+		for ref code_decl in all_code {
+			match **code_decl {
+				CodeDecl::Label(ref label) => {
+					let addr = self.pc;
+					self.define_label(label.clone(), addr);
+				}
+
+				CodeDecl::Instruction(ref instruction) => {
+					unsafe { try!(self.encode_instruction(self.memory.offset(self.pc as isize), instruction)) };
+
+					let size = instruction.size();
+					total_size += size;
+					self.pc += size;
+				}
+			}
+		}
+
+		Ok(total_size)
 	}
 
 	unsafe fn encode_instruction(&self, memory: *mut Trit, instruction: &Instruction) -> Result<(), EncodeError> {
@@ -314,14 +353,6 @@ impl Encoder {
 		let reladdr = try!(self.relative_addr(label));
 		ternary::from_int(memory, reladdr, WORD_ISIZE);
 		Ok(())
-	}
-
-	fn check_pc(&self, pc: usize) -> Result<(), EncodeError> {
-		if pc > self.memory_size {
-			Err(EncodeError::InsufficientMemory)
-		} else {
-			Ok(())
-		}
 	}
 
 	pub fn label_addr(&self, label: &String) -> Result<Addr, EncodeError> {

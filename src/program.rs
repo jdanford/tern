@@ -1,26 +1,70 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use types::*;
-use instructions::Instruction;
 use parser::*;
+use util::next_aligned_addr;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+pub enum ReadMode {
+	Code,
+	Data,
+}
+
+#[derive(Clone, Debug)]
 pub struct Program {
-	pub pc: usize,
-	pub instructions: Vec<Instruction>,
-	pub labels: HashMap<String, Addr>,
+	read_mode: ReadMode,
+	pub code: Vec<CodeDecl>,
+	pub data: Vec<DataDecl>,
 }
 
 impl Program {
 	pub fn new() -> Program {
 		Program {
-			pc: 0,
-			labels: HashMap::new(),
-			instructions: Vec::new(),
+			read_mode: ReadMode::Code,
+			code: Vec::new(),
+			data: Vec::new(),
 		}
+	}
+
+	pub fn code_size(&self) -> usize {
+		self.code.iter().map(|d| match *d {
+			CodeDecl::Instruction(ref inst) => inst.size(),
+			_ => 0
+		}).sum()
+	}
+
+	pub fn data_size(&self) -> usize {
+		let len = self.data.len();
+		let mut addr = 0;
+
+		for i in 0..len {
+			match self.data[i] {
+				DataDecl::Data(ref data) => {
+					addr += data.size();
+
+					if i < len - 1 {
+						match self.data[i + 1] {
+							DataDecl::Data(ref next_data) => {
+								addr = next_aligned_addr(addr, next_data.alignment());
+							}
+
+							_ => {}
+						}
+					} else {
+						return addr + data.size();
+					}
+				}
+
+				_ => {}
+			}
+		}
+
+		return 0;
+	}
+
+	pub fn size(&self) -> usize {
+		self.code_size() + self.data_size()
 	}
 
 	pub fn read_file<'a>(&mut self, path: &'a str) -> Result<(), ParseError> {
@@ -50,16 +94,23 @@ impl Program {
 		let line = clean_line(raw_line);
 
 		if !line.is_empty() {
-			match try!(parse_line(line)) {
-				ParsedLine::StaticData(_) => {}
-
-				ParsedLine::Label(label) => {
-					self.labels.insert(label, self.pc);
+			match line {
+				".code" => {
+					self.read_mode = ReadMode::Code;
 				}
 
-				ParsedLine::Instruction(instruction) => {
-					self.pc += instruction.size();
-					self.instructions.push(instruction);
+				".data" => {
+					self.read_mode = ReadMode::Data;
+				}
+
+				_ => match self.read_mode {
+					ReadMode::Data => {
+						self.data.push(try!(parse_data_line(line)));
+					}
+
+					ReadMode::Code => {
+						self.code.push(try!(parse_code_line(line)));
+					}
 				}
 			}
 		}
@@ -68,22 +119,38 @@ impl Program {
 	}
 
 	pub fn debug(&self) {
-		let mut labels = self.labels.iter().collect::<Vec<_>>();
-		labels.sort_by_key(|&(_, pc)| pc);
+		self.print_data();
+		println!("");
+		self.print_code();
+	}
 
-		let instructions = self.instructions.iter().cloned();
+	fn print_data(&self) {
+		println!(".data");
+		for data_decl in self.data.iter().cloned() {
+			match data_decl {
+				DataDecl::Label(label) => {
+					println!("{}:", label);
+				}
 
-		let mut pc = 0;
-		for instruction in instructions {
-			if let Some(&(label, &label_pc)) = labels.get(0) {
-				if label_pc == pc {
-					println!("{} {}:", pc, label);
-					labels.remove(0);
+				DataDecl::Data(data) => {
+					println!("  {:?}", data);
 				}
 			}
+		}
+	}
 
-			println!("{} {:?}", pc, instruction);
-			pc += instruction.size();
+	fn print_code(&self) {
+		println!(".code");
+		for code_decl in self.code.iter().cloned() {
+			match code_decl {
+				CodeDecl::Label(label) => {
+					println!("{}:", label);
+				}
+
+				CodeDecl::Instruction(instruction) => {
+					println!("  {:?}", instruction);
+				}
+			}
 		}
 	}
 }

@@ -1,3 +1,13 @@
+.data
+trytes:
+	@tryte 1
+	@tryte 2
+	@tryte 3
+
+string:
+	@string "Hello, world!"
+
+.code
 start:
 	movi $a0, 0 ; a
 	movi $a1, 1 ; b

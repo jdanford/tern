@@ -6,34 +6,54 @@ use ternary;
 use types::*;
 use registers::Register;
 use instructions::Instruction;
+use static_data::StaticData;
 
 mod patterns {
-	pub static LABEL: &'static str = r"([_a-z][_a-z0-9]*):";
-	pub static INSTRUCTION: &'static str = r"([a-z][a-z0-9]*)(\s+(.*))?";
 	pub static COMMA: &'static str = r",\s*";
 	pub static TERNARY: &'static str = r"0t([10T]+)";
+	pub static LABEL: &'static str = r"([_a-z][_a-z0-9]*):";
+	pub static STATEMENT: &'static str = r"([_a-z][_a-z0-9]*)(\s+(.*))?";
+	pub static STRING: &'static str = r#"^\s*"((?:\\"|[^"])+)"\s*$"#;
 }
 
-#[derive(Debug)]
-pub enum StaticData {
-	Tryte(Tryte),
-	Half(Half),
-	Word(Word),
-	Char(char),
-	String(String),
-}
-
-#[derive(Debug)]
-pub enum ParsedLine {
-	StaticData(StaticData),
+#[derive(Clone, Debug)]
+pub enum CodeDecl {
 	Label(String),
 	Instruction(Instruction),
+}
+
+impl CodeDecl {
+	pub fn size(&self) -> usize {
+		match *self {
+			CodeDecl::Instruction(ref inst) => inst.size(),
+			_ => 0
+		}
+	}
+}
+
+#[derive(Clone, Debug)]
+pub enum DataDecl {
+	Label(String),
+	Data(StaticData),
+}
+
+impl DataDecl {
+	pub fn size(&self) -> usize {
+		match *self {
+			DataDecl::Data(ref data) => data.size(),
+			_ => 0
+		}
+	}
 }
 
 #[derive(Debug)]
 pub enum ParseError {
 	Unknown,
+	RegexCaptureFailure,
+	InvalidCodeSection,
+	InvalidDataSection,
 	InvalidLabel(String),
+	InvalidDataType(String),
 	InvalidOpcode(String),
 	InvalidTernary(String, usize),
 	InvalidRegister(String),
@@ -54,27 +74,61 @@ pub fn clean_line<'a>(raw_line: &'a str) -> &'a str {
 	&line[..end].trim()
 }
 
-pub fn parse_line<'a>(line: &'a str) -> Result<ParsedLine, ParseError> {
-	if line.chars().rev().next().unwrap() == ':' {
-		let label_re = try!(Regex::new(patterns::LABEL).map_err(ParseError::RegexError));
-		let captures = try!(label_re.captures(line).ok_or(ParseError::Unknown));
-		if let Some(label) = captures.iter().nth(1).unwrap() {
-			Ok(ParsedLine::Label(label.to_string()))
-		} else {
-			let label = &line[..line.len() - 1];
-			Err(ParseError::InvalidLabel(label.to_string()))
-		}
+pub fn line_is_label(line: &str) -> bool {
+	line.chars().rev().next().unwrap() == ':'
+}
+
+pub fn line_is_data(line: &str) -> bool {
+	line.chars().next().unwrap() == '@'
+}
+
+pub fn parse_code_line(line: &str) -> Result<CodeDecl, ParseError> {
+	if line_is_label(line) {
+		parse_label_line(line).map(CodeDecl::Label)
 	} else {
-		parse_instruction(line).map(ParsedLine::Instruction)
+		parse_instruction(line).map(CodeDecl::Instruction)
 	}
 }
 
-fn parse_instruction<'a>(line: &'a str) -> Result<Instruction, ParseError> {
-	let instruction_re = try!(Regex::new(patterns::INSTRUCTION).map_err(ParseError::RegexError));
-	let captures = try!(instruction_re.captures(line).ok_or(ParseError::Unknown));
+pub fn parse_data_line(line: &str) -> Result<DataDecl, ParseError> {
+	if line_is_label(line) {
+		parse_label_line(line).map(DataDecl::Label)
+	} else if line_is_data(line) {
+		parse_data(&line[1..]).map(DataDecl::Data)
+	} else {
+		Err(ParseError::InvalidDataSection)
+	}
+}
+
+pub fn parse_label_line(line: &str) -> Result<String, ParseError> {
+	let label_re = try!(Regex::new(patterns::LABEL).map_err(ParseError::RegexError));
+	let captures = try!(label_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
 	let captures = captures.iter().collect::<Vec<_>>();
 
-	let opcode_name = try!(captures[1].ok_or(ParseError::Unknown));
+	if let Some(label) = captures[1] {
+		Ok(label.to_string())
+	} else {
+		let label = &line[..line.len() - 1];
+		Err(ParseError::InvalidLabel(label.to_string()))
+	}
+}
+
+fn parse_data(line: &str) -> Result<StaticData, ParseError> {
+	let statement_re = try!(Regex::new(patterns::STATEMENT).map_err(ParseError::RegexError));
+	let captures = try!(statement_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
+	let captures = captures.iter().collect::<Vec<_>>();
+
+	let type_name = try!(captures[1].ok_or(ParseError::RegexCaptureFailure));
+	let rest = try!(captures[3].ok_or(ParseError::RegexCaptureFailure));
+	data_from_parts(type_name, rest)
+}
+
+fn parse_instruction(line: &str) -> Result<Instruction, ParseError> {
+	let statement_re = try!(Regex::new(patterns::STATEMENT).map_err(ParseError::RegexError));
+	let captures = try!(statement_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
+	let captures = captures.iter().collect::<Vec<_>>();
+
+	let opcode_name = try!(captures[1].ok_or(ParseError::RegexCaptureFailure));
 	let args = if let Some(args_str) = captures[3] {
 		let comma_re = try!(Regex::new(patterns::COMMA).map_err(ParseError::RegexError));
 		comma_re.split(args_str).collect()
@@ -103,7 +157,7 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
 	}
 
 	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
+	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= TRYTE_SIZE);
 		unsafe { ternary::from_str(mut_ptr!(tryte), trit_str) };
@@ -123,7 +177,7 @@ fn parse_half(s: &str) -> Result<Half, ParseError> {
 	}
 
 	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
+	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= HALF_SIZE);
 		unsafe { ternary::from_str(mut_ptr!(half), trit_str) };
@@ -143,13 +197,51 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
 	}
 
 	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::Unknown));
+	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
 	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
 		assert!(trit_str.len() <= WORD_SIZE);
 		unsafe { ternary::from_str(mut_ptr!(word), trit_str) };
 		Ok(word)
 	} else {
 		Err(ParseError::InvalidTernary(s.to_string(), WORD_SIZE))
+	}
+}
+
+fn parse_string(s: &str) -> Result<String, ParseError> {
+	println!("parsing string: `{}`", s);
+	let string_re = try!(Regex::new(patterns::STRING).map_err(ParseError::RegexError));
+	let captures = try!(string_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
+	let captures = captures.iter().collect::<Vec<_>>();
+	let string = try!(captures[1].ok_or(ParseError::Unknown));
+	Ok(string.to_string())
+}
+
+fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, ParseError> {
+	match type_name {
+		"tryte" => {
+			let tryte = try!(parse_tryte(rest));
+			let i = unsafe { ternary::to_int(ptr!(tryte), TRYTE_ISIZE) };
+			Ok(StaticData::Tryte(i))
+		}
+
+		"half" => {
+			let half = try!(parse_half(rest));
+			let i = unsafe { ternary::to_int(ptr!(half), HALF_ISIZE) };
+			Ok(StaticData::Half(i))
+		}
+
+		"word" => {
+			let word = try!(parse_word(rest));
+			let i = unsafe { ternary::to_int(ptr!(word), WORD_ISIZE) };
+			Ok(StaticData::Word(i))
+		}
+
+		"string" => {
+			let string = try!(parse_string(rest));
+			Ok(StaticData::String(string))
+		}
+
+ 		_ => Err(ParseError::InvalidDataType(type_name.to_string()))
 	}
 }
 
