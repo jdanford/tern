@@ -1,5 +1,4 @@
 use libc::{malloc, free};
-use rlibc::{memset};
 use std::mem::transmute;
 
 use trit::Trit;
@@ -8,7 +7,7 @@ use types::*;
 use opcodes::Opcode;
 use registers::{Register, REGISTER_COUNT};
 
-pub const PROGRAM_MAGIC_NUMBER: isize = 70607384120; // 1T1T1T1T1T1T1T1T1T1T1T1T
+pub const PROGRAM_MAGIC_NUMBER: isize = 49425168884; // 1TTT1TTT1TTT1TTT1TTT1TTT
 
 pub struct VM {
 	pub registers: [Word; REGISTER_COUNT],
@@ -23,9 +22,10 @@ impl VM {
 		let registers = [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT];
 		let memory = unsafe {
 			let ptr = malloc(memory_size);
-			memset(transmute(ptr), 0, memory_size);
 			transmute(ptr)
 		};
+
+		unsafe { ternary::clear(memory, memory_size as isize) };
 
 		VM {
 			registers: registers,

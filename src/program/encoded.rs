@@ -43,14 +43,10 @@ impl EncodedProgram {
 		}
 	}
 
-	pub fn define_label(&mut self, label: String, addr: Addr) {
-		self.labels.insert(label, addr);
-	}
-
-	pub fn insert_label(&mut self, label: String) {
+	pub fn insert_label(&mut self, label: &String) {
 		self.pc = next_aligned_addr(self.pc, WORD_SIZE);
 		let addr = self.pc;
-		self.labels.insert(label, addr);
+		self.labels.insert(label.clone(), addr);
 	}
 
 	pub fn define_relative_patch(&mut self, ptr: *mut Trit, label: String) {
@@ -110,7 +106,7 @@ impl EncodedProgram {
 		for ref data_decl in all_data {
 			match **data_decl {
 				DataDecl::Label(ref label) => {
-					self.insert_label(label.clone());
+					self.insert_label(label);
 				}
 
 				DataDecl::Data(ref data) => {
@@ -136,7 +132,7 @@ impl EncodedProgram {
 		for ref code_decl in all_code {
 			match **code_decl {
 				CodeDecl::Label(ref label) => {
-					self.insert_label(label.clone());
+					self.insert_label(label);
 				}
 
 				CodeDecl::Instruction(ref instruction) => {
@@ -158,6 +154,8 @@ impl EncodedProgram {
 	}
 
 	unsafe fn encode_instruction(&mut self, memory: *mut Trit, instruction: &Instruction) -> Result<(), EncodeError> {
+		ternary::clear(memory, instruction.size() as isize);
+
 		match *instruction {
 			Instruction::Mov(r1, r2) => {
 				try!(self.encode_opcode(memory, Opcode::Mov));
