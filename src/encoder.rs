@@ -17,10 +17,17 @@ pub enum EncodeError {
 	IntOutOfRange(isize, isize, isize),
 }
 
+#[derive(Debug)]
+enum Patch {
+	Relative(String),
+	Absolute(String),
+}
+
 pub struct Encoder {
 	memory: *mut Trit,
 	memory_size: usize,
 	labels: HashMap<String, Addr>,
+	patches: HashMap<*mut Trit, Patch>,
 	pc: Addr,
 }
 
@@ -30,12 +37,21 @@ impl Encoder {
 			memory: memory,
 			memory_size: memory_size,
 			labels: HashMap::new(),
+			patches: HashMap::new(),
 			pc: 0,
 		}
 	}
 
 	pub fn define_label(&mut self, label: String, addr: Addr) {
 		self.labels.insert(label, addr);
+	}
+
+	pub fn define_relative_patch(&mut self, ptr: *mut Trit, label: String) {
+		self.patches.insert(ptr, Patch::Relative(label));
+	}
+
+	pub fn define_absolute_patch(&mut self, ptr: *mut Trit, label: String) {
+		self.patches.insert(ptr, Patch::Absolute(label));
 	}
 
 	pub fn encode(&mut self, program: Program) -> Result<usize, EncodeError> {
@@ -50,7 +66,20 @@ impl Encoder {
 		let code_size = try!(self.encode_code_section(&program.code[..]));
 		self.pc += code_size;
 
+		self.patch_addrs();
+
 		Ok(self.pc)
+	}
+
+	fn patch_addrs(&mut self) {
+		for (&ptr, ref patch) in self.patches.iter() {
+			let addr = match **patch {
+				Patch::Absolute(ref label) => self.label_addr(label).unwrap() as isize,
+				Patch::Relative(ref label) => self.relative_addr(label).unwrap(),
+			};
+
+			unsafe { ternary::from_int(ptr, addr, WORD_ISIZE) };
+		}
 	}
 
 	pub fn encode_data_section(&mut self, all_data: &[DataDecl]) -> Result<usize, EncodeError> {
@@ -91,7 +120,10 @@ impl Encoder {
 				}
 
 				CodeDecl::Instruction(ref instruction) => {
-					unsafe { try!(self.encode_instruction(self.memory.offset(self.pc as isize), instruction)) };
+					unsafe {
+						let local_memory = self.memory.offset(self.pc as isize);
+						try!(self.encode_instruction(local_memory, instruction));
+					}
 
 					let size = instruction.size();
 					total_size += size;
@@ -103,7 +135,7 @@ impl Encoder {
 		Ok(total_size)
 	}
 
-	unsafe fn encode_instruction(&self, memory: *mut Trit, instruction: &Instruction) -> Result<(), EncodeError> {
+	unsafe fn encode_instruction(&mut self, memory: *mut Trit, instruction: &Instruction) -> Result<(), EncodeError> {
 		match *instruction {
 			Instruction::Mov(r1, r2) => {
 				try!(self.encode_opcode(memory, Opcode::Mov));
@@ -343,15 +375,15 @@ impl Encoder {
 		Ok(())
 	}
 
-	unsafe fn encode_label(&self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
-		let addr = try!(self.label_addr(label));
-		ternary::from_int(memory, addr as isize, WORD_ISIZE);
+	unsafe fn encode_label(&mut self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
+		let patch_addr = memory;
+		self.define_absolute_patch(patch_addr, label.clone());
 		Ok(())
 	}
 
-	unsafe fn encode_relative_label(&self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
-		let reladdr = try!(self.relative_addr(label));
-		ternary::from_int(memory, reladdr, WORD_ISIZE);
+	unsafe fn encode_relative_label(&mut self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
+		let patch_addr = memory;
+		self.define_relative_patch(patch_addr, label.clone());
 		Ok(())
 	}
 

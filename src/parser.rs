@@ -1,5 +1,4 @@
 use regex;
-use regex::Regex;
 use std::io;
 
 use ternary;
@@ -49,7 +48,8 @@ impl DataDecl {
 #[derive(Debug)]
 pub enum ParseError {
 	Unknown,
-	RegexCaptureFailure,
+	RegexMatchFailure,
+	RegexMissingCapture,
 	InvalidCodeSection,
 	InvalidDataSection,
 	InvalidLabel(String),
@@ -100,43 +100,52 @@ pub fn parse_data_line(line: &str) -> Result<DataDecl, ParseError> {
 	}
 }
 
-pub fn parse_label_line(line: &str) -> Result<String, ParseError> {
-	let label_re = try!(Regex::new(patterns::LABEL).map_err(ParseError::RegexError));
-	let captures = try!(label_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
-	let captures = captures.iter().collect::<Vec<_>>();
+fn compile_regex(pattern: &str) -> Result<regex::Regex, ParseError> {
+	regex::Regex::new(pattern).map_err(ParseError::RegexError)
+}
 
-	if let Some(label) = captures[1] {
-		Ok(label.to_string())
-	} else {
-		let label = &line[..line.len() - 1];
-		Err(ParseError::InvalidLabel(label.to_string()))
-	}
+fn get_capture<'a>(captures: &regex::Captures<'a>, i: usize) -> Result<&'a str, ParseError> {
+	captures.at(i).ok_or(ParseError::RegexMissingCapture)
+}
+
+fn with_regex_captures<T, F>(pattern: &str, s: &str, mut f: F) -> Result<T, ParseError>
+		where F: FnMut(&regex::Captures) -> Result<T, ParseError> {
+	let re = try!(compile_regex(pattern));
+	let captures = try!(re.captures(s).ok_or(ParseError::RegexMatchFailure));
+	f(&captures)
+}
+
+pub fn parse_label_line(line: &str) -> Result<String, ParseError> {
+	with_regex_captures(patterns::LABEL, line, |ref captures| {
+		if let Some(label) = captures.at(1) {
+			Ok(label.to_string())
+		} else {
+			let label = &line[..line.len() - 1];
+			Err(ParseError::InvalidLabel(label.to_string()))
+		}
+	})
 }
 
 fn parse_data(line: &str) -> Result<StaticData, ParseError> {
-	let statement_re = try!(Regex::new(patterns::STATEMENT).map_err(ParseError::RegexError));
-	let captures = try!(statement_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
-	let captures = captures.iter().collect::<Vec<_>>();
-
-	let type_name = try!(captures[1].ok_or(ParseError::RegexCaptureFailure));
-	let rest = try!(captures[3].ok_or(ParseError::RegexCaptureFailure));
-	data_from_parts(type_name, rest)
+	with_regex_captures(patterns::STATEMENT, line, |ref captures| {
+		let type_name = try!(get_capture(captures, 1));
+		let rest = try!(get_capture(captures, 3));
+		data_from_parts(type_name, rest)
+	})
 }
 
 fn parse_instruction(line: &str) -> Result<Instruction, ParseError> {
-	let statement_re = try!(Regex::new(patterns::STATEMENT).map_err(ParseError::RegexError));
-	let captures = try!(statement_re.captures(line).ok_or(ParseError::RegexCaptureFailure));
-	let captures = captures.iter().collect::<Vec<_>>();
+	with_regex_captures(patterns::STATEMENT, line, |ref captures| {
+		let opcode_name = try!(get_capture(captures, 1));
+		let args = if let Some(args_str) = captures.at(3) {
+			let comma_re = try!(compile_regex(patterns::COMMA));
+			comma_re.split(args_str).collect()
+		} else {
+			Vec::new()
+		};
 
-	let opcode_name = try!(captures[1].ok_or(ParseError::RegexCaptureFailure));
-	let args = if let Some(args_str) = captures[3] {
-		let comma_re = try!(Regex::new(patterns::COMMA).map_err(ParseError::RegexError));
-		comma_re.split(args_str).collect()
-	} else {
-		Vec::new()
-	};
-
-	instruction_from_parts(opcode_name, &args[..])
+		instruction_from_parts(opcode_name, &args[..])
+	})
 }
 
 fn parse_label(s: &str) -> Result<String, ParseError> {
@@ -156,15 +165,15 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
 		return Ok(tryte)
 	}
 
-	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
-	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
-		assert!(trit_str.len() <= TRYTE_SIZE);
-		unsafe { ternary::from_str(mut_ptr!(tryte), trit_str) };
-		Ok(tryte)
-	} else {
-		Err(ParseError::InvalidTernary(s.to_string(), TRYTE_SIZE))
-	}
+	with_regex_captures(patterns::TERNARY, s, |ref captures| {
+		if let Some(trit_str) = captures.at(1) {
+			assert!(trit_str.len() <= TRYTE_SIZE);
+			unsafe { ternary::from_str(mut_ptr!(tryte), trit_str) };
+			Ok(tryte)
+		} else {
+			Err(ParseError::InvalidTernary(s.to_string(), TRYTE_SIZE))
+		}
+	})
 }
 
 fn parse_half(s: &str) -> Result<Half, ParseError> {
@@ -176,15 +185,15 @@ fn parse_half(s: &str) -> Result<Half, ParseError> {
 		return Ok(half)
 	}
 
-	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
-	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
-		assert!(trit_str.len() <= HALF_SIZE);
-		unsafe { ternary::from_str(mut_ptr!(half), trit_str) };
-		Ok(half)
-	} else {
-		Err(ParseError::InvalidTernary(s.to_string(), HALF_SIZE))
-	}
+	with_regex_captures(patterns::TERNARY, s, |ref captures| {
+		if let Some(trit_str) = captures.at(1) {
+			assert!(trit_str.len() <= HALF_SIZE);
+			unsafe { ternary::from_str(mut_ptr!(half), trit_str) };
+			Ok(half)
+		} else {
+			Err(ParseError::InvalidTernary(s.to_string(), HALF_SIZE))
+		}
+	})
 }
 
 fn parse_word(s: &str) -> Result<Word, ParseError> {
@@ -196,24 +205,22 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
 		return Ok(word)
 	}
 
-	let ternary_re = try!(Regex::new(patterns::TERNARY).map_err(ParseError::RegexError));
-	let captures = try!(ternary_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
-	if let Some(trit_str) = captures.iter().nth(1).unwrap() {
-		assert!(trit_str.len() <= WORD_SIZE);
-		unsafe { ternary::from_str(mut_ptr!(word), trit_str) };
-		Ok(word)
-	} else {
-		Err(ParseError::InvalidTernary(s.to_string(), WORD_SIZE))
-	}
+	with_regex_captures(patterns::TERNARY, s, |ref captures| {
+		if let Some(trit_str) = captures.at(1) {
+			assert!(trit_str.len() <= WORD_SIZE);
+			unsafe { ternary::from_str(mut_ptr!(word), trit_str) };
+			Ok(word)
+		} else {
+			Err(ParseError::InvalidTernary(s.to_string(), WORD_SIZE))
+		}
+	})
 }
 
 fn parse_string(s: &str) -> Result<String, ParseError> {
-	println!("parsing string: `{}`", s);
-	let string_re = try!(Regex::new(patterns::STRING).map_err(ParseError::RegexError));
-	let captures = try!(string_re.captures(s).ok_or(ParseError::RegexCaptureFailure));
-	let captures = captures.iter().collect::<Vec<_>>();
-	let string = try!(captures[1].ok_or(ParseError::Unknown));
-	Ok(string.to_string())
+	with_regex_captures(patterns::STRING, s, |ref captures| {
+		let string = try!(get_capture(captures, 1));
+		Ok(string.to_string())
+	})
 }
 
 fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, ParseError> {
