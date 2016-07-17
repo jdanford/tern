@@ -98,6 +98,12 @@ impl VM {
 				self.movi(Register::from(t1), half);
 			}
 
+			Opcode::Mova => {
+				let inst = self.next_inst();
+				let addr = inst_addr(inst);
+				self.mova(Register::from(t1), addr);
+			}
+
 			Opcode::Add => {
 				self.add(Register::from(t1), Register::from(t2), Register::from(t3));
 			}
@@ -163,6 +169,11 @@ impl VM {
 		let dest = self.dest(r_dest);
 		ternary::clear(dest, WORD_ISIZE);
 		ternary::copy(dest, ptr!(half), HALF_ISIZE);
+	}
+
+	unsafe fn mova(&mut self, r_dest: Register, addr: Addr) {
+		let dest = self.dest(r_dest);
+		ternary::from_int(dest, addr as isize, WORD_ISIZE);
 	}
 
 	unsafe fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {

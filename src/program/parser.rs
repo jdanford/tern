@@ -271,6 +271,11 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 			Ok(Instruction::Movw(try!(parse_register(args[0])), try!(parse_word(args[1]))))
 		}
 
+		"mova" => {
+			assert_eq!(arity, 2);
+			Ok(Instruction::Mova(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+		}
+
 		"lb" => {
 			assert_eq!(arity, 3);
 			Ok(Instruction::Lb(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
@@ -366,11 +371,6 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 			Ok(Instruction::Jmp(try!(parse_label(args[0]))))
 		}
 
-		"jr" => {
-			assert_eq!(arity, 1);
-			Ok(Instruction::Jr(try!(parse_register(args[0]))))
-		}
-
 		"jT" => {
 			assert_eq!(arity, 2);
 			Ok(Instruction::JT(try!(parse_register(args[0])), try!(parse_label(args[1]))))
@@ -404,11 +404,6 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 		"call" => {
 			assert_eq!(arity, 1);
 			Ok(Instruction::Call(try!(parse_label(args[0]))))
-		}
-
-		"callr" => {
-			assert_eq!(arity, 1);
-			Ok(Instruction::Callr(try!(parse_register(args[0]))))
 		}
 
 		"ret" => {

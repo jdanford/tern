@@ -5,10 +5,12 @@ use util::*;
 fn program_mov() {
 	let code = r#"
 	.data
-	@tryte 1
-	@tryte 2
-	@tryte 3
-	@string "Hello!"
+	trytes:
+		@tryte 1
+		@tryte 2
+		@tryte 3
+	message:
+		@string "Hello!"
 
 	.code
 	start:
@@ -20,6 +22,7 @@ fn program_mov() {
 
 	end:
 		addi $a0, 20
+		mova $a1, message
 		halt
 	"#;
 
@@ -27,6 +30,7 @@ fn program_mov() {
 		Ok(mut vm) => {
 			vm.run();
 			assert_eq!(vm.read(Register::A0), 123);
+			assert_eq!(vm.read(Register::A1), 72);
 		}
 
 		Err(e) => {

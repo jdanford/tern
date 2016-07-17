@@ -175,6 +175,12 @@ impl EncodedProgram {
 				try!(self.encode_word(tryte_offset!(memory, 4), word));
 			}
 
+			Instruction::Mova(r, ref label) => {
+				try!(self.encode_opcode(memory, Opcode::Mova));
+				try!(self.encode_register(tryte_offset!(memory, 1), r));
+				try!(self.encode_label(tryte_offset!(memory, 4), label));
+			}
+
 			Instruction::Lb(r1, r2, offset) => {
 				try!(self.encode_opcode(memory, Opcode::Lb));
 				try!(self.encode_register(tryte_offset!(memory, 1), r1));
@@ -299,11 +305,6 @@ impl EncodedProgram {
 				try!(self.encode_label(tryte_offset!(memory, 4), label));
 			}
 
-			Instruction::Jr(r) => {
-				try!(self.encode_opcode(memory, Opcode::Jr));
-				try!(self.encode_register(tryte_offset!(memory, 1), r));
-			}
-
 			Instruction::JT(r, ref label) => {
 				try!(self.encode_opcode(memory, Opcode::JT));
 				try!(self.encode_register(tryte_offset!(memory, 1), r));
@@ -343,11 +344,6 @@ impl EncodedProgram {
 			Instruction::Call(ref label) => {
 				try!(self.encode_opcode(memory, Opcode::Call));
 				try!(self.encode_label(tryte_offset!(memory, 4), label));
-			}
-
-			Instruction::Callr(r) => {
-				try!(self.encode_opcode(memory, Opcode::Callr));
-				try!(self.encode_register(tryte_offset!(memory, 1), r));
 			}
 
 			Instruction::Ret => {
