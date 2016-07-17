@@ -1,11 +1,11 @@
 .data
 trytes:
-	@tryte 1
-	@tryte 2
-	@tryte 3
+	%tryte 1
+	%tryte 2
+	%tryte 3
 
 string:
-	@string "Hello, world!"
+	%string "Hello, world!"
 
 .code
 start:

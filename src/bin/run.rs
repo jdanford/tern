@@ -4,7 +4,7 @@ use std::env;
 use std::fs::{File};
 use std::io;
 use std::io::prelude::*;
-use tern::program::DecodedProgram;
+use tern::util::vm_from_reader;
 
 fn main() {
     if let Some(path) = env::args().nth(1) {
@@ -13,10 +13,9 @@ fn main() {
             _ => Box::new(File::open(path).unwrap()),
         };
 
-        let mut program = DecodedProgram::new();
-        match program.read(reader) {
-            Ok(()) => {
-                program.debug();
+        match vm_from_reader(reader) {
+            Ok(mut vm) => {
+                vm.run();
             }
 
             Err(e) => {

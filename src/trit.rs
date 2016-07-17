@@ -70,11 +70,11 @@ impl ops::Neg for Trit {
     type Output = Trit;
 
     fn neg(self) -> Self::Output {
-		match self {
-			Neg => Pos,
-			Zero => Zero,
-			Pos => Neg,
-		}
+        match self {
+            Neg => Pos,
+            Zero => Zero,
+            Pos => Neg,
+        }
     }
 }
 
@@ -94,12 +94,12 @@ impl ops::BitAnd for Trit {
     type Output = Trit;
 
     fn bitand(self, rhs: Trit) -> Self::Output {
-		match (self, rhs) {
-			(Pos, Pos) => Pos,
-			(_, Zero)  => Zero,
-			(Zero, _)  => Zero,
-			_          => Neg,
-		}
+        match (self, rhs) {
+            (Pos, Pos) => Pos,
+            (_, Zero)  => Zero,
+            (Zero, _)  => Zero,
+            _          => Neg,
+        }
     }
 }
 
@@ -107,18 +107,18 @@ impl ops::BitOr for Trit {
     type Output = Trit;
 
     fn bitor(self, rhs: Trit) -> Self::Output {
-		match (self, rhs) {
-			(Neg, Neg) => Neg,
-			(a, Zero)  => a,
-			(Zero, b)  => b,
-			_          => Pos,
-		}
+        match (self, rhs) {
+            (Neg, Neg) => Neg,
+            (a, Zero)  => a,
+            (Zero, b)  => b,
+            _          => Pos,
+        }
     }
 }
 
 impl Trit {
     pub fn sum_with_carry(self, rhs: Trit, carry_in: Trit) -> (Trit, Trit) {
-		let isum = (self as i8) + (rhs as i8) + (carry_in as i8);
+        let isum = (self as i8) + (rhs as i8) + (carry_in as i8);
         match isum {
             -3 => (Zero, Neg),
             -2 => (Pos, Neg),
@@ -128,7 +128,7 @@ impl Trit {
             3  => (Zero, Pos),
             _  => (Zero, Zero),
         }
-	}
+    }
 }
 
 impl fmt::Debug for Trit {

@@ -8,6 +8,7 @@ pub mod ternary;
 pub mod types;
 pub mod opcodes;
 pub mod registers;
+pub mod syscalls;
 pub mod vm;
 pub mod program;
 pub mod text;
