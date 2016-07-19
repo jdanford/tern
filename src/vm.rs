@@ -279,23 +279,8 @@ impl VM {
     }
 
     unsafe fn syscall(&mut self, index: isize) {
-        use text;
-
         let syscall = Syscall::from(index);
-        match syscall {
-            Syscall::PrintLine => {
-                let addr = self.read(Register::A0);
-                let local_memory = self.memory.offset(addr);
-                let (s, _) = text::decode_str(local_memory);
-                println!("{}", s);
-            }
-
-            Syscall::Exit => {
-                use std::process::exit;
-                let code = self.read(Register::A0) as i32;
-                exit(code);
-            }
-        }
+        syscall.perform(self);
     }
 }
 

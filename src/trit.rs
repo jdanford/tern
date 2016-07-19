@@ -4,8 +4,8 @@ use std::ops;
 
 use trit::Trit::*;
 
-#[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(i8)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Trit {
     Neg  = -1,
     Zero = 0,

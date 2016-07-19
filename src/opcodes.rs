@@ -1,6 +1,5 @@
 use std::mem::transmute;
 
-#[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
     Mov = 0,      // mov REG, REG
@@ -98,7 +97,7 @@ impl From<isize> for Opcode {
             panic!("Invalid index: {}", n);
         }
 
-        unsafe { transmute(n as i16) }
+        unsafe { transmute(n as u8) }
     }
 }
 

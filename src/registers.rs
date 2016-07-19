@@ -3,7 +3,6 @@ use std::str::FromStr;
 
 pub const REGISTER_COUNT: usize = 24;
 
-#[repr(i16)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Register {
     ZERO = 0,
@@ -74,7 +73,7 @@ impl From<isize> for Register {
             panic!("Invalid index: {}", n);
         }
 
-        unsafe { transmute(n as i16) }
+        unsafe { transmute(n as u8) }
     }
 }
 
