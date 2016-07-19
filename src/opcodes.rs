@@ -1,6 +1,7 @@
+use std::fmt;
 use std::mem::transmute;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
     Mov = 0,      // mov REG, REG
     Movi = 1,     // movi REG, HALF
@@ -89,6 +90,45 @@ impl Opcode {
             _ => false,
         }
     }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Opcode::Mov => "mov",
+            Opcode::Movi => "movi",
+            Opcode::Movw => "movw",
+            Opcode::Mova => "mova",
+            Opcode::Lb => "lb",
+            Opcode::Lh => "lh",
+            Opcode::Lw => "lw",
+            Opcode::Sb => "sb",
+            Opcode::Sh => "sh",
+            Opcode::Sw => "sw",
+            Opcode::Add => "add",
+            Opcode::Addi => "addi",
+            Opcode::Mul => "mul",
+            Opcode::Muli => "muli",
+            Opcode::Not => "not",
+            Opcode::And => "and",
+            Opcode::Andi => "andi",
+            Opcode::Or => "or",
+            Opcode::Ori => "ori",
+            Opcode::Shf => "shf",
+            Opcode::Shfi => "shfi",
+            Opcode::Cmp => "cmp",
+            Opcode::Jmp => "jmp",
+            Opcode::JT => "jT",
+            Opcode::J0 => "j0",
+            Opcode::J1 => "j1",
+            Opcode::JT0 => "jT0",
+            Opcode::JT1 => "jT1",
+            Opcode::J01 => "j01",
+            Opcode::Call => "call",
+            Opcode::Ret => "ret",
+            Opcode::Syscall => "syscall",
+            Opcode::Break => "break",
+            Opcode::Halt => "halt",
+        }
+    }
 }
 
 impl From<isize> for Opcode {
@@ -140,5 +180,23 @@ impl<'a> From<&'a str> for Opcode {
             "halt" => Opcode::Halt,
             _ => panic!("Invalid opcode: {}", s),
         }
+    }
+}
+
+impl Into<&'static str> for Opcode {
+    fn into(self) -> &'static str {
+        self.name()
+    }
+}
+
+impl fmt::Debug for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }

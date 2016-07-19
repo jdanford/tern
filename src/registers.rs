@@ -1,9 +1,10 @@
+use std::fmt;
 use std::mem::transmute;
 use std::str::FromStr;
 
 pub const REGISTER_COUNT: usize = 24;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Register {
     ZERO = 0,
     RA = 1,
@@ -63,6 +64,64 @@ impl Register {
             "s4" => true,
             "s5" => true,
             _ => false,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Register::ZERO => "$zero",
+            Register::RA => "$ra",
+            Register::LO => "$lo",
+            Register::HI => "$hi",
+            Register::SP => "$sp",
+            Register::FP => "$fp",
+            Register::A0 => "$a0",
+            Register::A1 => "$a1",
+            Register::A2 => "$a2",
+            Register::A3 => "$a3",
+            Register::A4 => "$a4",
+            Register::A5 => "$a5",
+            Register::T0 => "$t0",
+            Register::T1 => "$t1",
+            Register::T2 => "$t2",
+            Register::T3 => "$t3",
+            Register::T4 => "$t4",
+            Register::T5 => "$t5",
+            Register::S0 => "$s0",
+            Register::S1 => "$s1",
+            Register::S2 => "$s2",
+            Register::S3 => "$s3",
+            Register::S4 => "$s4",
+            Register::S5 => "$s5",
+        }
+    }
+
+    pub fn index_name(self) -> &'static str {
+        match self {
+            Register::ZERO => "$0",
+            Register::RA => "$1",
+            Register::LO => "$2",
+            Register::HI => "$3",
+            Register::SP => "$4",
+            Register::FP => "$5",
+            Register::A0 => "$6",
+            Register::A1 => "$7",
+            Register::A2 => "$8",
+            Register::A3 => "$9",
+            Register::A4 => "$10",
+            Register::A5 => "$11",
+            Register::T0 => "$12",
+            Register::T1 => "$13",
+            Register::T2 => "$14",
+            Register::T3 => "$15",
+            Register::T4 => "$16",
+            Register::T5 => "$17",
+            Register::S0 => "$18",
+            Register::S1 => "$19",
+            Register::S2 => "$20",
+            Register::S3 => "$21",
+            Register::S4 => "$22",
+            Register::S5 => "$23",
         }
     }
 }
@@ -140,5 +199,23 @@ impl FromStr for Register {
             "$s5" | "$23" => Ok(Register::S5),
             _ => Err(s.to_string()),
         }
+    }
+}
+
+impl Into<&'static str> for Register {
+    fn into(self) -> &'static str {
+        self.name()
+    }
+}
+
+impl fmt::Debug for Register {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+impl fmt::Display for Register {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
