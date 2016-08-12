@@ -1,0 +1,20 @@
+.data
+message:
+    %string "Here's some stuff:"
+
+.code
+start:
+    movi $s0, 0
+    mova $a0, message
+    syscall
+
+    movi $a1, 123
+    mov $a0, $a1
+
+    movi $s0, 1
+    syscall
+
+    movi $s0, 2
+    syscall
+
+    halt

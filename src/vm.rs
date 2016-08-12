@@ -8,14 +8,14 @@ use opcodes::Opcode;
 use registers::{Register, REGISTER_COUNT};
 use syscalls::Syscall;
 
-pub const PROGRAM_MAGIC_NUMBER: isize = 49425168884; // 1TTT1TTT1TTT1TTT1TTT1TTT
+pub const PROGRAM_MAGIC_NUMBER: isize = 47330224520; // 1TTTTT1TTTTT1TTTTT1TTTTT
 
 pub struct VM {
     pub registers: [Word; REGISTER_COUNT],
     pub memory: *mut Trit,
     pub memory_size: usize,
     pub pc: Addr,
-    pub running: bool
+    pub running: bool,
 }
 
 impl VM {
@@ -33,15 +33,15 @@ impl VM {
             memory: memory,
             memory_size: memory_size,
             pc: 0,
-            running: false
+            running: false,
         }
     }
 
-    fn src(&self, r: Register) -> *const Trit {
+    pub fn src(&self, r: Register) -> *const Trit {
         ptr!(self.registers[r as usize])
     }
 
-    fn dest(&mut self, r: Register) -> *mut Trit {
+    pub fn dest(&mut self, r: Register) -> *mut Trit {
         mut_ptr!(self.registers[r as usize])
     }
 
