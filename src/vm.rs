@@ -89,6 +89,8 @@ impl VM {
         let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
         let opcode = Opcode::from(t0);
 
+        println!("{:?}", opcode);
+
         match opcode {
             Opcode::Mov => {
                 self.mov(Register::from(t1), Register::from(t2));
@@ -143,6 +145,12 @@ impl VM {
                 let inst = self.next_inst();
                 let addr = inst_addr(inst);
                 self.jmp(addr);
+            }
+
+            Opcode::JT => {
+                let r = Register::from(t1);
+                let addr = inst_reladdr(inst);
+                self.jmp_rel_if(r, addr, |t| t == Trit::Neg);
             }
 
             Opcode::Call => {
@@ -267,6 +275,19 @@ impl VM {
         self.pc = addr;
     }
 
+    fn jmp_rel(&mut self, addr: RelAddr) {
+        self.pc = (self.pc as RelAddr + addr) as Addr;
+    }
+
+    fn jmp_rel_if<F>(&mut self, r: Register, addr: RelAddr, f: F) where F: Fn(Trit) -> bool {
+        let src = self.src(r);
+        let trit = unsafe { *src.offset(0) };
+        println!("{:?} {:?} {:?}", r, addr, trit);
+        if f(trit) {
+            self.jmp_rel(addr);
+        }
+    }
+
     unsafe fn call(&mut self, addr: Addr) {
         let pc = self.pc as isize;
         self.write(Register::RA, pc);
@@ -288,6 +309,10 @@ fn inst_half(inst: Word) -> Half {
     let mut half = EMPTY_HALF;
     unsafe { ternary::copy(mut_ptr!(half), tryte_ptr!(inst, 2), HALF_ISIZE) };
     half
+}
+
+fn inst_reladdr(inst: Word) -> RelAddr {
+    unsafe { ternary::to_int(tryte_ptr!(inst, 2), HALF_ISIZE) as RelAddr }
 }
 
 fn inst_addr(inst: Word) -> Addr {
