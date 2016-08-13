@@ -168,6 +168,18 @@ pub unsafe fn get_mst(trits: *const Trit, len: isize) -> Trit {
     Trit::Zero
 }
 
+pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
+    for i in (0..len - 1).rev() {
+        let lt = *lhs.offset(i);
+        let rt = *rhs.offset(i);
+        if lt != rt {
+            return Trit::from_ordering(lt.cmp(&rt));
+        }
+    }
+
+    return Trit::Zero;
+}
+
 pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F)
     where F: Fn(Trit) -> Trit
 {

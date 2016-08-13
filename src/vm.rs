@@ -92,8 +92,6 @@ impl VM {
         let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
         let opcode = Opcode::from(t0);
 
-        println!("{:?}", opcode);
-
         match opcode {
             Opcode::Mov => {
                 self.mov(Register::from(t1), Register::from(t2));
@@ -144,6 +142,15 @@ impl VM {
                 self.shf(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
+            Opcode::Cmp => {
+                let dest = self.dest(Register::from(t1));
+                let lhs = self.src(Register::from(t2));
+                let rhs = self.src(Register::from(t3));
+
+                ternary::clear(dest, WORD_ISIZE);
+                *dest.offset(0) = ternary::compare(lhs, rhs, WORD_ISIZE);
+            }
+
             Opcode::Jmp => {
                 let inst = self.next_inst();
                 let addr = inst_addr(inst);
@@ -153,37 +160,37 @@ impl VM {
             Opcode::JT => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t == Trit::Neg);
+                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Neg);
             }
 
             Opcode::J0 => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t == Trit::Zero);
+                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Zero);
             }
 
             Opcode::J1 => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t == Trit::Pos);
+                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Pos);
             }
 
             Opcode::JT0 => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t != Trit::Pos);
+                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Pos);
             }
 
             Opcode::JT1 => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t != Trit::Zero);
+                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Zero);
             }
 
             Opcode::J01 => {
                 let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_trit(r, addr, |t| t != Trit::Neg);
+                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Neg);
             }
 
             Opcode::Call => {
@@ -321,12 +328,11 @@ impl VM {
         self.pc = (self.pc as RelAddr + addr) as Addr;
     }
 
-    fn jmp_rel_trit<F>(&mut self, r: Register, addr: RelAddr, f: F)
+    fn jmp_rel_if_trit<F>(&mut self, r: Register, addr: RelAddr, f: F)
         where F: Fn(Trit) -> bool
     {
         let src = self.src(r);
         let trit = unsafe { *src.offset(0) };
-        println!("{:?} {:?} {:?}", r, addr, trit);
         if f(trit) {
             self.jmp_rel(addr);
         }

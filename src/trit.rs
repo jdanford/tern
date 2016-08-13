@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Write;
 use std::ops;
@@ -5,11 +6,21 @@ use std::ops;
 use trit::Trit::*;
 
 #[repr(i8)]
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Trit {
     Neg = -1,
     Zero = 0,
     Pos = 1,
+}
+
+impl Trit {
+    pub fn from_ordering(o: Ordering) -> Trit {
+        match o {
+            Ordering::Less => Neg,
+            Ordering::Equal => Zero,
+            Ordering::Greater => Pos,
+        }
+    }
 }
 
 impl Default for Trit {
