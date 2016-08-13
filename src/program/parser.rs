@@ -10,8 +10,8 @@ use program::data::StaticData;
 mod patterns {
     pub static COMMA: &'static str = r",\s*";
     pub static TERNARY: &'static str = r"0t([10T]+)";
-    pub static LABEL: &'static str = r"([_a-z][_a-z0-9]*):";
-    pub static STATEMENT: &'static str = r"([_a-z][_a-z0-9]*)(\s+(.*))?";
+    pub static LABEL: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*):";
+    pub static STATEMENT: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*)(\s+(.*))?";
     pub static STRING: &'static str = r#"^\s*"((?:\\"|[^"])+)"\s*$"#;
 }
 
