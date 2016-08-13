@@ -3,47 +3,47 @@ use std::mem::transmute;
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
-    Mov = 0,      // mov REG, REG
-    Movi = 1,     // movi REG, HALF
-    Movw = 2,     // movw REG ... WORD
-    Mova = 3,     // mova REG ... ADDR
+    Mov = 0, // mov REG, REG
+    Movi = 1, // movi REG, HALF
+    Movw = 2, // movw REG ... WORD
+    Mova = 3, // mova REG ... ADDR
 
-    Lb = 4,       // lb REG, REG, OFF
-    Lh = 5,       // lh REG, REG, OFF
-    Lw = 6,       // lw REG, REG, OFF
+    Lb = 4, // lb REG, REG, OFF
+    Lh = 5, // lh REG, REG, OFF
+    Lw = 6, // lw REG, REG, OFF
 
-    Sb = 7,       // sb REG, REG, OFF
-    Sh = 8,       // sh REG, REG, OFF
-    Sw = 9,       // sw REG, REG, OFF
+    Sb = 7, // sb REG, REG, OFF
+    Sh = 8, // sh REG, REG, OFF
+    Sw = 9, // sw REG, REG, OFF
 
-    Add = 10,     // add REG, REG, REG
-    Addi = 11,    // addi REG, HALF
-    Mul = 12,     // mul REG, REG (writes to HI/LO)
-    Muli = 13,    // muli REG, HALF
+    Add = 10, // add REG, REG, REG
+    Addi = 11, // addi REG, HALF
+    Mul = 12, // mul REG, REG (writes to HI/LO)
+    Muli = 13, // muli REG, HALF
 
-    Not = 14,     // not REG, REG
-    And = 15,     // and REG, REG, REG
-    Andi = 16,    // andi REG, HALF
-    Or = 17,      // or REG, REG, REG
-    Ori = 18,     // ori REG, HALF
-    Shf = 19,     // shf REG, REG, REG
-    Shfi = 20,    // shfi REG, HALF
-    Cmp = 21,     // cmp REG, REG, REG
+    Not = 14, // not REG, REG
+    And = 15, // and REG, REG, REG
+    Andi = 16, // andi REG, HALF
+    Or = 17, // or REG, REG, REG
+    Ori = 18, // ori REG, HALF
+    Shf = 19, // shf REG, REG, REG
+    Shfi = 20, // shfi REG, HALF
+    Cmp = 21, // cmp REG, REG, REG
 
-    Jmp = 22,     // jmp REG
-    JT = 23,      // jT REG, RELADDR
-    J0 = 24,      // j0 REG, RELADDR
-    J1 = 25,      // j1 REG, RELADDR
-    JT0 = 26,     // jT0 REG, RELADDR
-    JT1 = 27,     // jT1 REG, RELADDR
-    J01 = 28,     // j01 REG, RELADDR
+    Jmp = 22, // jmp REG
+    JT = 23, // jT REG, RELADDR
+    J0 = 24, // j0 REG, RELADDR
+    J1 = 25, // j1 REG, RELADDR
+    JT0 = 26, // jT0 REG, RELADDR
+    JT1 = 27, // jT1 REG, RELADDR
+    J01 = 28, // j01 REG, RELADDR
 
-    Call = 29,    // call REG
-    Ret = 30,     // ret
+    Call = 29, // call REG
+    Ret = 30, // ret
 
     Syscall = 31, // syscall
-    Break = 32,   // break
-    Halt = 33,    // halt
+    Break = 32, // break
+    Halt = 33, // halt
 }
 
 impl Opcode {

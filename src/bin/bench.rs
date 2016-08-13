@@ -43,7 +43,7 @@ const DEFAULT_ITERATIONS: usize = 1024;
 fn main() {
     let iterations = match env::args().nth(1) {
         Some(arg_str) => arg_str.parse().unwrap_or(DEFAULT_ITERATIONS),
-        _ => DEFAULT_ITERATIONS
+        _ => DEFAULT_ITERATIONS,
     };
 
     for _ in 0..iterations {

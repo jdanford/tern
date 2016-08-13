@@ -2,7 +2,7 @@ use registers::Register;
 use util::*;
 use vm::VM;
 
-fn test_program<F: Fn(&mut VM)>(code: &str, f: F)  {
+fn test_program<F: Fn(&mut VM)>(code: &str, f: F) {
     match vm_from_code(code) {
         Ok(mut vm) => {
             vm.run();

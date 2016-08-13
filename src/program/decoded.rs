@@ -109,13 +109,15 @@ impl DecodedProgram {
                     self.read_mode = ReadMode::Data;
                 }
 
-                _ => match self.read_mode {
-                    ReadMode::Data => {
-                        self.data.push(try!(parse_data_line(line)));
-                    }
+                _ => {
+                    match self.read_mode {
+                        ReadMode::Data => {
+                            self.data.push(try!(parse_data_line(line)));
+                        }
 
-                    ReadMode::Code => {
-                        self.code.push(try!(parse_code_line(line)));
+                        ReadMode::Code => {
+                            self.code.push(try!(parse_code_line(line)));
+                        }
                     }
                 }
             }

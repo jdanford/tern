@@ -1,6 +1,7 @@
 use std::char;
 
 use trit::Trit;
+use trit::Trit::*;
 use ternary;
 use types::*;
 
@@ -31,9 +32,9 @@ const DOUBLE_MAX: usize = DOUBLE_MIN + DOUBLE_RANGE - 1;
 const TRIPLE_MIN: usize = DOUBLE_MAX + 1;
 const TRIPLE_MAX: usize = TRIPLE_MIN + TRIPLE_RANGE - 1;
 
-static DOUBLE_START: Tryte = [Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Pos];
-static TRIPLE_START: Tryte = [Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Pos, Trit::Pos];
-static CONTINUATION: Tryte = [Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Pos, Trit::Neg];
+static DOUBLE_START: Tryte = [Zero, Zero, Zero, Zero, Zero, Pos];
+static TRIPLE_START: Tryte = [Zero, Zero, Zero, Zero, Pos, Pos];
+static CONTINUATION: Tryte = [Zero, Zero, Zero, Zero, Pos, Neg];
 
 pub fn encode_str(trits: *mut Trit, s: &str) -> usize {
     let mut i = 0;
@@ -85,24 +86,34 @@ pub unsafe fn encode_char(trits: *mut Trit, c: char) -> usize {
 
         2 => {
             ternary::copy(tryte_offset!(trits, 0), ptr!(DOUBLE_START), TRYTE_ISIZE);
-            ternary::copy(tryte_offset!(trits, 0), ptr!(word), DOUBLE_START_TRITS as isize);
+            ternary::copy(tryte_offset!(trits, 0),
+                          ptr!(word),
+                          DOUBLE_START_TRITS as isize);
 
             let offset = DOUBLE_START_TRITS as isize;
             ternary::copy(tryte_offset!(trits, 1), ptr!(CONTINUATION), TRYTE_ISIZE);
-            ternary::copy(tryte_offset!(trits, 1), ptr!(word).offset(offset), CONTINUATION_TRITS as isize);
+            ternary::copy(tryte_offset!(trits, 1),
+                          ptr!(word).offset(offset),
+                          CONTINUATION_TRITS as isize);
         }
 
         3 => {
             ternary::copy(tryte_offset!(trits, 0), ptr!(TRIPLE_START), TRYTE_ISIZE);
-            ternary::copy(tryte_offset!(trits, 0), ptr!(word), TRIPLE_START_TRITS as isize);
+            ternary::copy(tryte_offset!(trits, 0),
+                          ptr!(word),
+                          TRIPLE_START_TRITS as isize);
 
             let offset1 = TRIPLE_START_TRITS as isize;
             ternary::copy(tryte_offset!(trits, 1), ptr!(CONTINUATION), TRYTE_ISIZE);
-            ternary::copy(tryte_offset!(trits, 1), ptr!(word).offset(offset1), CONTINUATION_TRITS as isize);
+            ternary::copy(tryte_offset!(trits, 1),
+                          ptr!(word).offset(offset1),
+                          CONTINUATION_TRITS as isize);
 
             let offset2 = offset1 + CONTINUATION_TRITS as isize;
             ternary::copy(tryte_offset!(trits, 2), ptr!(CONTINUATION), TRYTE_ISIZE);
-            ternary::copy(tryte_offset!(trits, 2), ptr!(word).offset(offset2), CONTINUATION_TRITS as isize);
+            ternary::copy(tryte_offset!(trits, 2),
+                          ptr!(word).offset(offset2),
+                          CONTINUATION_TRITS as isize);
         }
 
         _ => {
@@ -130,10 +141,14 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
                 return invalid_result;
             }
 
-            ternary::copy(mut_ptr!(word), tryte_offset!(trits, 0), DOUBLE_START_TRITS as isize);
+            ternary::copy(mut_ptr!(word),
+                          tryte_offset!(trits, 0),
+                          DOUBLE_START_TRITS as isize);
 
             let offset = DOUBLE_START_TRITS as isize;
-            ternary::copy(mut_ptr!(word).offset(offset), tryte_offset!(trits, 1), CONTINUATION_TRITS as isize);
+            ternary::copy(mut_ptr!(word).offset(offset),
+                          tryte_offset!(trits, 1),
+                          CONTINUATION_TRITS as isize);
 
             (DOUBLE_OFFSET, 2)
         }
@@ -143,13 +158,19 @@ pub unsafe fn decode_char(trits: *const Trit) -> (char, usize) {
                 return invalid_result;
             }
 
-            ternary::copy(mut_ptr!(word), tryte_offset!(trits, 0), TRIPLE_START_TRITS as isize);
+            ternary::copy(mut_ptr!(word),
+                          tryte_offset!(trits, 0),
+                          TRIPLE_START_TRITS as isize);
 
             let offset1 = TRIPLE_START_TRITS as isize;
-            ternary::copy(mut_ptr!(word).offset(offset1), tryte_offset!(trits, 1), CONTINUATION_TRITS as isize);
+            ternary::copy(mut_ptr!(word).offset(offset1),
+                          tryte_offset!(trits, 1),
+                          CONTINUATION_TRITS as isize);
 
             let offset2 = offset1 + CONTINUATION_TRITS as isize;
-            ternary::copy(mut_ptr!(word).offset(offset2), tryte_offset!(trits, 2), CONTINUATION_TRITS as isize);
+            ternary::copy(mut_ptr!(word).offset(offset2),
+                          tryte_offset!(trits, 2),
+                          CONTINUATION_TRITS as isize);
 
             (TRIPLE_OFFSET, 3)
         }

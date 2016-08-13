@@ -2,7 +2,8 @@ extern crate core;
 extern crate libc;
 extern crate regex;
 
-#[macro_use] mod macros;
+#[macro_use]
+mod macros;
 pub mod trit;
 pub mod ternary;
 pub mod types;

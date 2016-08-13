@@ -7,21 +7,23 @@ use trit::Trit::*;
 #[repr(i8)]
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Trit {
-    Neg  = -1,
+    Neg = -1,
     Zero = 0,
-    Pos  = 1,
+    Pos = 1,
 }
 
 impl Default for Trit {
-    fn default() -> Self { Trit::Zero }
+    fn default() -> Self {
+        Trit::Zero
+    }
 }
 
 impl From<i8> for Trit {
     fn from(n: i8) -> Trit {
         match n {
-            1  => Pos,
+            1 => Pos,
             -1 => Neg,
-            _  => Zero,
+            _ => Zero,
         }
     }
 }
@@ -29,9 +31,9 @@ impl From<i8> for Trit {
 impl From<Trit> for u8 {
     fn from(t: Trit) -> u8 {
         match t {
-            Neg  => b'T',
+            Neg => b'T',
             Zero => b'0',
-            Pos  => b'1',
+            Pos => b'1',
         }
     }
 }
@@ -41,7 +43,7 @@ impl From<u8> for Trit {
         match b {
             b'T' => Neg,
             b'1' => Pos,
-            _    => Zero,
+            _ => Zero,
         }
     }
 }
@@ -49,9 +51,9 @@ impl From<u8> for Trit {
 impl From<Trit> for char {
     fn from(t: Trit) -> char {
         match t {
-            Neg  => 'T',
+            Neg => 'T',
             Zero => '0',
-            Pos  => '1',
+            Pos => '1',
         }
     }
 }
@@ -61,7 +63,7 @@ impl From<char> for Trit {
         match c {
             'T' => Neg,
             '1' => Pos,
-            _   => Zero,
+            _ => Zero,
         }
     }
 }
@@ -85,7 +87,7 @@ impl ops::Mul for Trit {
         match self {
             Pos => rhs,
             Zero => Zero,
-            Neg => -rhs
+            Neg => -rhs,
         }
     }
 }
@@ -96,9 +98,9 @@ impl ops::BitAnd for Trit {
     fn bitand(self, rhs: Trit) -> Self::Output {
         match (self, rhs) {
             (Pos, Pos) => Pos,
-            (_, Zero)  => Zero,
-            (Zero, _)  => Zero,
-            _          => Neg,
+            (_, Zero) => Zero,
+            (Zero, _) => Zero,
+            _ => Neg,
         }
     }
 }
@@ -109,9 +111,9 @@ impl ops::BitOr for Trit {
     fn bitor(self, rhs: Trit) -> Self::Output {
         match (self, rhs) {
             (Neg, Neg) => Neg,
-            (a, Zero)  => a,
-            (Zero, b)  => b,
-            _          => Pos,
+            (a, Zero) => a,
+            (Zero, b) => b,
+            _ => Pos,
         }
     }
 }
@@ -123,10 +125,10 @@ impl Trit {
             -3 => (Zero, Neg),
             -2 => (Pos, Neg),
             -1 => (Neg, Zero),
-            1  => (Pos, Zero),
-            2  => (Neg, Pos),
-            3  => (Zero, Pos),
-            _  => (Zero, Zero),
+            1 => (Pos, Zero),
+            2 => (Neg, Pos),
+            3 => (Zero, Pos),
+            _ => (Zero, Zero),
         }
     }
 }

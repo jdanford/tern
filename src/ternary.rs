@@ -25,13 +25,17 @@ pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
     }
 }
 
-pub unsafe fn map<F>(dest: *mut Trit, src: *const Trit, len: isize, f: F) where F: Fn(Trit) -> Trit {
+pub unsafe fn map<F>(dest: *mut Trit, src: *const Trit, len: isize, f: F)
+    where F: Fn(Trit) -> Trit
+{
     for i in 0..len {
         *dest.offset(i) = f(*src.offset(i));
     }
 }
 
-pub unsafe fn zip<F>(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize, f: F) where F: Fn(Trit, Trit) -> Trit {
+pub unsafe fn zip<F>(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize, f: F)
+    where F: Fn(Trit, Trit) -> Trit
+{
     for i in 0..len {
         let l = *lhs.offset(i);
         let r = *rhs.offset(i);
@@ -39,7 +43,10 @@ pub unsafe fn zip<F>(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: i
     }
 }
 
-pub unsafe fn copy_blocks(src: *const Trit, size: usize, start: usize, blocks: Vec<(*mut Trit, usize)>) {
+pub unsafe fn copy_blocks(src: *const Trit,
+                          size: usize,
+                          start: usize,
+                          blocks: Vec<(*mut Trit, usize)>) {
     let mut blocks = blocks.clone();
 
     let mut start = start;
@@ -66,7 +73,9 @@ pub unsafe fn copy_blocks(src: *const Trit, size: usize, start: usize, blocks: V
     }
 }
 
-pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I) where I: IntoIterator<Item=Trit> {
+pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I)
+    where I: IntoIterator<Item = Trit>
+{
     for (i, trit) in iterable.into_iter().enumerate() {
         *dest.offset(i as isize) = trit;
     }
@@ -117,20 +126,24 @@ pub unsafe fn to_int(trits: *const Trit, len: isize) -> isize {
     n
 }
 
-pub fn write_trytes<I>(trits: *mut Trit, iterable: I) where I: IntoIterator<Item=isize> {
+pub fn write_trytes<I>(trits: *mut Trit, iterable: I)
+    where I: IntoIterator<Item = isize>
+{
     for (i, tryte) in iterable.into_iter().enumerate() {
         let offset = TRYTE_ISIZE * (i as isize);
-        unsafe { from_int(trits.offset(offset), tryte, TRYTE_ISIZE); }
+        unsafe {
+            from_int(trits.offset(offset), tryte, TRYTE_ISIZE);
+        }
     }
 }
 
 pub fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
-    unsafe { (
-        to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
-        to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
-        to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
-        to_int(tryte_offset!(trits, 3), TRYTE_ISIZE),
-    ) }
+    unsafe {
+        (to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
+         to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
+         to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
+         to_int(tryte_offset!(trits, 3), TRYTE_ISIZE))
+    }
 }
 
 pub unsafe fn get_lst(trits: *const Trit, len: isize) -> Trit {
@@ -155,7 +168,9 @@ pub unsafe fn get_mst(trits: *const Trit, len: isize) -> Trit {
     Trit::Zero
 }
 
-pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F) where F: Fn(Trit) -> Trit {
+pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F)
+    where F: Fn(Trit) -> Trit
+{
     for i in 0..len {
         *trits.offset(i) = f(*trits.offset(i));
     }

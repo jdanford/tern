@@ -52,7 +52,7 @@ impl EncodedProgram {
     pub fn encode(&mut self, program: DecodedProgram) -> Result<usize, EncodeError> {
         let required_size = program.size();
         if required_size > self.memory_size {
-            return Err(EncodeError::InsufficientMemory(required_size, self.memory_size))
+            return Err(EncodeError::InsufficientMemory(required_size, self.memory_size));
         }
 
         unsafe { ternary::from_int(self.memory, PROGRAM_MAGIC_NUMBER, WORD_ISIZE) };
@@ -143,7 +143,10 @@ impl EncodedProgram {
         Ok(total_size)
     }
 
-    unsafe fn encode_instruction(&mut self, memory: *mut Trit, instruction: &Instruction) -> Result<(), EncodeError> {
+    unsafe fn encode_instruction(&mut self,
+                                 memory: *mut Trit,
+                                 instruction: &Instruction)
+                                 -> Result<(), EncodeError> {
         ternary::clear(memory, instruction.size() as isize);
 
         match *instruction {
@@ -361,7 +364,10 @@ impl EncodedProgram {
         Ok(())
     }
 
-    unsafe fn encode_register(&self, memory: *mut Trit, register: Register) -> Result<(), EncodeError> {
+    unsafe fn encode_register(&self,
+                              memory: *mut Trit,
+                              register: Register)
+                              -> Result<(), EncodeError> {
         ternary::from_int(memory, register as isize, WORD_ISIZE);
         Ok(())
     }
@@ -381,20 +387,28 @@ impl EncodedProgram {
         Ok(())
     }
 
-    unsafe fn encode_label(&mut self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
+    unsafe fn encode_label(&mut self,
+                           memory: *mut Trit,
+                           label: &String)
+                           -> Result<(), EncodeError> {
         self.patches.insert(memory, Patch::Absolute(label.clone()));
         Ok(())
     }
 
-    unsafe fn encode_relative_label(&mut self, memory: *mut Trit, instruction: &Instruction, label: &String) -> Result<(), EncodeError> {
-        self.patches.insert(memory, Patch::Relative(self.pc + instruction.size(), label.clone()));
+    unsafe fn encode_relative_label(&mut self,
+                                    memory: *mut Trit,
+                                    instruction: &Instruction,
+                                    label: &String)
+                                    -> Result<(), EncodeError> {
+        self.patches.insert(memory,
+                            Patch::Relative(self.pc + instruction.size(), label.clone()));
         Ok(())
     }
 
     pub fn label_addr(&self, label: &String) -> Result<Addr, EncodeError> {
         match self.labels.get(label) {
             Some(&addr) => Ok(addr),
-            _ => Err(EncodeError::InvalidLabel(label.clone()))
+            _ => Err(EncodeError::InvalidLabel(label.clone())),
         }
     }
 

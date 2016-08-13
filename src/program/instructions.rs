@@ -43,10 +43,10 @@ pub enum Instruction {
 impl Instruction {
     pub fn size(&self) -> usize {
         match *self {
-            Instruction::Movw(_, _)
-            | Instruction::Mova(_, _)
-            | Instruction::Jmp(_)
-            | Instruction::Call(_) => WORD_SIZE * 2,
+            Instruction::Movw(_, _) |
+            Instruction::Mova(_, _) |
+            Instruction::Jmp(_) |
+            Instruction::Call(_) => WORD_SIZE * 2,
             _ => WORD_SIZE,
         }
     }

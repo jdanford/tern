@@ -25,7 +25,7 @@ impl CodeDecl {
     pub fn size(&self) -> usize {
         match *self {
             CodeDecl::Instruction(ref inst) => inst.size(),
-            _ => 0
+            _ => 0,
         }
     }
 }
@@ -40,7 +40,7 @@ impl DataDecl {
     pub fn size(&self) -> usize {
         match *self {
             DataDecl::Data(ref data) => data.size(),
-            _ => 0
+            _ => 0,
         }
     }
 }
@@ -109,7 +109,8 @@ fn get_capture<'a>(captures: &regex::Captures<'a>, i: usize) -> Result<&'a str, 
 }
 
 fn with_regex_captures<T, F>(pattern: &str, s: &str, mut f: F) -> Result<T, ParseError>
-        where F: FnMut(&regex::Captures) -> Result<T, ParseError> {
+    where F: FnMut(&regex::Captures) -> Result<T, ParseError>
+{
     let re = try!(compile_regex(pattern));
     let captures = try!(re.captures(s).ok_or(ParseError::RegexMatchFailure));
     f(&captures)
@@ -162,7 +163,7 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
     if let Ok(int) = s.parse() {
         assert!(TRYTE_MIN <= int && int <= TRYTE_MAX);
         unsafe { ternary::from_int(mut_ptr!(tryte), int, TRYTE_ISIZE) };
-        return Ok(tryte)
+        return Ok(tryte);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
@@ -182,7 +183,7 @@ fn parse_half(s: &str) -> Result<Half, ParseError> {
     if let Ok(int) = s.parse() {
         assert!(HALF_MIN <= int && int <= HALF_MAX);
         unsafe { ternary::from_int(mut_ptr!(half), int, HALF_ISIZE) };
-        return Ok(half)
+        return Ok(half);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
@@ -202,7 +203,7 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
     if let Ok(int) = s.parse() {
         assert!(WORD_MIN <= int && int <= WORD_MAX);
         unsafe { ternary::from_int(mut_ptr!(word), int, WORD_ISIZE) };
-        return Ok(word)
+        return Ok(word);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
@@ -248,11 +249,13 @@ fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, 
             Ok(StaticData::String(string))
         }
 
-         _ => Err(ParseError::InvalidDataType(type_name.to_string()))
+        _ => Err(ParseError::InvalidDataType(type_name.to_string())),
     }
 }
 
-fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<Instruction, ParseError> {
+fn instruction_from_parts<'a>(opcode_name: &'a str,
+                              args: &[&'a str])
+                              -> Result<Instruction, ParseError> {
     let arity = args.len();
 
     match opcode_name {
@@ -278,37 +281,51 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
         "lb" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Lb(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lb(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "lh" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Lh(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lh(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "lw" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Lw(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lw(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "sb" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Sb(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Sb(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "sh" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Sh(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Sh(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "sw" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Sw(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_tryte(args[2]))))
+            Ok(Instruction::Sw(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_tryte(args[2]))))
         }
 
         "add" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Add(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_register(args[2]))))
+            Ok(Instruction::Add(try!(parse_register(args[0])),
+                                try!(parse_register(args[1])),
+                                try!(parse_register(args[2]))))
         }
 
         "addi" => {
@@ -333,7 +350,9 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
         "and" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::And(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_register(args[2]))))
+            Ok(Instruction::And(try!(parse_register(args[0])),
+                                try!(parse_register(args[1])),
+                                try!(parse_register(args[2]))))
         }
 
         "andi" => {
@@ -343,7 +362,9 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
         "or" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Or(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_register(args[2]))))
+            Ok(Instruction::Or(try!(parse_register(args[0])),
+                               try!(parse_register(args[1])),
+                               try!(parse_register(args[2]))))
         }
 
         "ori" => {
@@ -353,7 +374,9 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
         "shf" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Shf(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_register(args[2]))))
+            Ok(Instruction::Shf(try!(parse_register(args[0])),
+                                try!(parse_register(args[1])),
+                                try!(parse_register(args[2]))))
         }
 
         "shfi" => {
@@ -363,7 +386,9 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
 
         "cmp" => {
             assert_eq!(arity, 3);
-            Ok(Instruction::Cmp(try!(parse_register(args[0])), try!(parse_register(args[1])), try!(parse_register(args[2]))))
+            Ok(Instruction::Cmp(try!(parse_register(args[0])),
+                                try!(parse_register(args[1])),
+                                try!(parse_register(args[2]))))
         }
 
         "jmp" => {
@@ -426,6 +451,6 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> Result<
             Ok(Instruction::Halt)
         }
 
-        _ => Err(ParseError::InvalidOpcode(opcode_name.to_string()))
+        _ => Err(ParseError::InvalidOpcode(opcode_name.to_string())),
     }
 }

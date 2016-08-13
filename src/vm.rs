@@ -50,7 +50,9 @@ impl VM {
     }
 
     pub fn write(&mut self, r: Register, value: isize) {
-        unsafe { ternary::from_int(self.dest(r), value, WORD_ISIZE); }
+        unsafe {
+            ternary::from_int(self.dest(r), value, WORD_ISIZE);
+        }
     }
 
     pub fn clear(&mut self, r: Register) {
@@ -61,7 +63,8 @@ impl VM {
         let magic_number = unsafe { ternary::to_int(self.memory, WORD_ISIZE) };
         assert_eq!(magic_number, PROGRAM_MAGIC_NUMBER);
 
-        let pc_start = unsafe { ternary::to_int(self.memory.offset(WORD_ISIZE), WORD_ISIZE) } as Addr;
+        let pc_start =
+            unsafe { ternary::to_int(self.memory.offset(WORD_ISIZE), WORD_ISIZE) } as Addr;
         self.pc = pc_start;
 
         self.running = true;
@@ -268,11 +271,19 @@ impl VM {
     }
 
     unsafe fn and(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
-        ternary::zip(self.dest(r_dest), self.src(r_lhs), self.src(r_rhs), WORD_ISIZE, |t1, t2| t1 & t2);
+        ternary::zip(self.dest(r_dest),
+                     self.src(r_lhs),
+                     self.src(r_rhs),
+                     WORD_ISIZE,
+                     |t1, t2| t1 & t2);
     }
 
     unsafe fn or(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
-        ternary::zip(self.dest(r_dest), self.src(r_lhs), self.src(r_rhs), WORD_ISIZE, |t1, t2| t1 | t2);
+        ternary::zip(self.dest(r_dest),
+                     self.src(r_lhs),
+                     self.src(r_rhs),
+                     WORD_ISIZE,
+                     |t1, t2| t1 | t2);
     }
 
     unsafe fn shf(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
@@ -294,11 +305,12 @@ impl VM {
         let mid = self.dest(r_dest);
         let hi = self.dest(Register::HI);
 
-        ternary::copy_blocks(src, WORD_SIZE, shifted_offset as usize, vec![
+        let blocks = vec![
             (lo, WORD_SIZE),
             (mid, WORD_SIZE),
             (hi, WORD_SIZE),
-        ]);
+        ];
+        ternary::copy_blocks(src, WORD_SIZE, shifted_offset as usize, blocks);
     }
 
     fn jmp(&mut self, addr: Addr) {
@@ -309,7 +321,9 @@ impl VM {
         self.pc = (self.pc as RelAddr + addr) as Addr;
     }
 
-    fn jmp_rel_trit<F>(&mut self, r: Register, addr: RelAddr, f: F) where F: Fn(Trit) -> bool {
+    fn jmp_rel_trit<F>(&mut self, r: Register, addr: RelAddr, f: F)
+        where F: Fn(Trit) -> bool
+    {
         let src = self.src(r);
         let trit = unsafe { *src.offset(0) };
         println!("{:?} {:?} {:?}", r, addr, trit);
