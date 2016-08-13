@@ -20,7 +20,7 @@ pub enum EncodeError {
 
 #[derive(Debug)]
 enum Patch {
-    Relative(String),
+    Relative(Addr, String),
     Absolute(String),
 }
 
@@ -47,14 +47,6 @@ impl EncodedProgram {
         self.pc = next_aligned_addr(self.pc, WORD_SIZE);
         let addr = self.pc;
         self.labels.insert(label.clone(), addr);
-    }
-
-    pub fn define_relative_patch(&mut self, ptr: *mut Trit, label: String) {
-        self.patches.insert(ptr, Patch::Relative(label));
-    }
-
-    pub fn define_absolute_patch(&mut self, ptr: *mut Trit, label: String) {
-        self.patches.insert(ptr, Patch::Absolute(label));
     }
 
     pub fn encode(&mut self, program: DecodedProgram) -> Result<usize, EncodeError> {
@@ -91,7 +83,7 @@ impl EncodedProgram {
         for (&ptr, ref patch) in self.patches.iter() {
             let addr = match **patch {
                 Patch::Absolute(ref label) => self.label_addr(label).unwrap() as isize,
-                Patch::Relative(ref label) => self.relative_addr(label).unwrap(),
+                Patch::Relative(pc, ref label) => self.relative_addr(pc, label).unwrap(),
             };
 
             unsafe { ternary::from_int(ptr, addr, WORD_ISIZE) };
@@ -306,37 +298,37 @@ impl EncodedProgram {
             Instruction::JT(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::JT));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::J0(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::J0));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::J1(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::J1));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::JT0(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::JT0));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::JT1(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::JT1));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::J01(r, ref label) => {
                 try!(self.encode_opcode(memory, Opcode::J01));
                 try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), label));
+                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
             }
 
             Instruction::Call(ref label) => {
@@ -390,14 +382,12 @@ impl EncodedProgram {
     }
 
     unsafe fn encode_label(&mut self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
-        let patch_addr = memory;
-        self.define_absolute_patch(patch_addr, label.clone());
+        self.patches.insert(memory, Patch::Absolute(label.clone()));
         Ok(())
     }
 
-    unsafe fn encode_relative_label(&mut self, memory: *mut Trit, label: &String) -> Result<(), EncodeError> {
-        let patch_addr = memory;
-        self.define_relative_patch(patch_addr, label.clone());
+    unsafe fn encode_relative_label(&mut self, memory: *mut Trit, instruction: &Instruction, label: &String) -> Result<(), EncodeError> {
+        self.patches.insert(memory, Patch::Relative(self.pc + instruction.size(), label.clone()));
         Ok(())
     }
 
@@ -408,8 +398,8 @@ impl EncodedProgram {
         }
     }
 
-    pub fn relative_addr(&self, label: &String) -> Result<RelAddr, EncodeError> {
+    pub fn relative_addr(&self, pc: Addr, label: &String) -> Result<RelAddr, EncodeError> {
         let addr = try!(self.label_addr(label));
-        Ok(addr as RelAddr - self.pc as RelAddr)
+        Ok(addr as RelAddr - pc as RelAddr)
     }
 }
