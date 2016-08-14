@@ -1,22 +1,12 @@
 use registers::Register;
 use util::*;
+use vm::VM;
 
-#[test]
-fn vm_mov() {
-    let code = r#"
-        mov $a0, $a1
-        halt
-    "#;
-
+fn test_program<F: Fn(&mut VM)>(code: &str, f: F) {
     match vm_from_code(code) {
         Ok(mut vm) => {
-            vm.write(Register::A0, 40);
-            vm.write(Register::A1, 13);
-
             vm.run();
-
-            assert_eq!(vm.read(Register::A0), 13);
-            assert_eq!(vm.read(Register::A1), 13);
+            f(&mut vm);
         }
 
         Err(e) => {
@@ -24,156 +14,192 @@ fn vm_mov() {
             assert!(false);
         }
     }
+}
+
+#[test]
+fn vm_mov() {
+    let code = r#"
+        movi $a0, 40
+        movi $a1, 13
+        mov $a0, $a1
+        halt
+    "#;
+
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), 13);
+        assert_eq!(vm.read(Register::A1), 13);
+    });
 }
 
 #[test]
 fn vm_add() {
     let code = r#"
+        movi $a0, 0
+        movi $a1, 7
+        movi $a2, -2
         add $a0, $a1, $a2
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::A0, 0);
-            vm.write(Register::A1, 7);
-            vm.write(Register::A2, -2);
-
-            vm.run();
-
-            assert_eq!(vm.read(Register::A0), 5);
-            assert_eq!(vm.read(Register::A1), 7);
-            assert_eq!(vm.read(Register::A2), -2);
-        }
-
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), 5);
+        assert_eq!(vm.read(Register::A1), 7);
+        assert_eq!(vm.read(Register::A2), -2);
+    });
 }
 
 #[test]
 fn vm_mul() {
     let code = r#"
+        movi $hi, 999
+        movi $a1, -15
+        movi $a2, -3
         mul $a1, $a2
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::HI, 999);
-            vm.write(Register::A1, -15);
-            vm.write(Register::A2, -3);
-
-            vm.run();
-
-            assert_eq!(vm.read(Register::LO), 45);
-            assert_eq!(vm.read(Register::HI), 0);
-        }
-
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::LO), 45);
+        assert_eq!(vm.read(Register::HI), 0);
+    });
 }
 
 #[test]
 fn vm_not() {
     let code = r#"
+        movw $a1, 0t10T010T010T010T010T010T0
         not $a0, $a1
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::A1, 84728860944); // 10T010T010T010T010T010T0
-
-            vm.run();
-
-            assert_eq!(vm.read(Register::A0), -84728860944); // T010T010T010T010T010T010
-        }
-
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), -84728860944); // T010T010T010T010T010T010
+    });
 }
 
 #[test]
 fn vm_and() {
     let code = r#"
+        movw $a1, 0t111111111111111111111000
+        movw $a2, 0t11T111111111111111111111
         and $a0, $a1, $a2
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::A1, 141214768227); // 111111111111111111111000
-            vm.write(Register::A2, 120294061834); // 11T111111111111111111111
-
-            vm.run();
-
-            assert_eq!(vm.read(Register::A0), 120294061821); // 11T111111111111111111000
-        }
-
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), 120294061821); // 11T111111111111111111000
+    });
 }
 
 #[test]
 fn vm_or() {
     let code = r#"
+        movw $a1, 0tTTTT0000TTTT000011110000
+        movw $a2, 0t10T010T010T010T010T010T0
         and $a0, $a1, $a2
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::A1, -139492630440); // TTTT0000TTTT000011110000
-            vm.write(Register::A2, 84728860944);   // 10T010T010T010T010T010T0
-
-            vm.run();
-
-            assert_eq!(vm.read(Register::A0), -104619473316); // 1TTT10T01TTT10T0111110T0
-        }
-
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), -104619473316); // 1TTT10T01TTT10T0111110T0
+    });
 }
 
 #[test]
 fn vm_shf() {
     let code = r#"
+        movw $a1, 0t111111111111111111111111
+        movi $a2, 2
+        movi $lo, 123
+        movi $hi, 456
         shf $a0, $a1, $a2
         halt
     "#;
 
-    match vm_from_code(code) {
-        Ok(mut vm) => {
-            vm.write(Register::A1, 141_214_768_240);            // 111111111111111111111111
-            vm.write(Register::A2, 2);
-            vm.write(Register::LO, 123);
-            vm.write(Register::HI, 456);
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::LO), 0);
+        assert_eq!(vm.read(Register::HI), 4);               // 000000000000000000000011
+        assert_eq!(vm.read(Register::A0), 141_214_768_236); // 111111111111111111111100
+    });
+}
 
-            vm.run();
+#[test]
+fn vm_shfi() {
+    let code = r#"
+        movw $a0, 0t111111111111111111111111
+        movi $lo, 123
+        movi $hi, 456
+        shfi $a0, 2
+        halt
+    "#;
 
-            assert_eq!(vm.read(Register::LO), 0);
-            assert_eq!(vm.read(Register::HI), 4);               // 000000000000000000000011
-            assert_eq!(vm.read(Register::A0), 141_214_768_236); // 111111111111111111111100
-        }
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::LO), 0);
+        assert_eq!(vm.read(Register::HI), 4);               // 000000000000000000000011
+        assert_eq!(vm.read(Register::A0), 141_214_768_236); // 111111111111111111111100
+    });
+}
 
-        Err(e) => {
-            println!("{}", e);
-            assert!(false);
-        }
-    }
+#[test]
+fn vm_cmp() {
+    let code = r#"
+        movi $a0, 0tT1
+        movi $a1, 0t01
+        movi $a2, 0t1T
+
+        cmp $t0, $a0, $a1
+        cmp $t1, $a1, $a2
+        cmp $t2, $a2, $a0
+        cmp $t3, $a2, $a2
+
+        halt
+    "#;
+
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::T0), -1);
+        assert_eq!(vm.read(Register::T1), -1);
+        assert_eq!(vm.read(Register::T2), 1);
+        assert_eq!(vm.read(Register::T3), 0);
+    });
+}
+
+#[test]
+fn vm_jmp() {
+    let code = r#"
+        start:
+            movi $a0, 103
+            jmp end
+
+        garbage:
+            movi $a0, 456
+
+        end:
+            addi $a0, 20
+            halt
+    "#;
+
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), 123);
+    });
+}
+
+#[test]
+fn vm_jt() {
+    let code = r#"
+        start:
+            movi $a0, 103
+            movi $a1, 0tT
+            jT $a1, end
+
+        garbage:
+            movi $a0, 456
+
+        end:
+            addi $a0, 20
+            halt
+    "#;
+
+    test_program(code, |ref mut vm| {
+        assert_eq!(vm.read(Register::A0), 123);
+    });
 }

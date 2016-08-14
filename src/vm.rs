@@ -139,7 +139,13 @@ impl VM {
             }
 
             Opcode::Shf => {
-                self.shf(Register::from(t1), Register::from(t2), Register::from(t3));
+                let offset = self.read(Register::from(t3));
+                self.shf(Register::from(t1), Register::from(t2), offset);
+            }
+
+            Opcode::Shfi => {
+                let offset = inst_half_isize(inst);
+                self.shf(Register::from(t1), Register::from(t1), offset);
             }
 
             Opcode::Cmp => {
@@ -293,11 +299,10 @@ impl VM {
                      |t1, t2| t1 | t2);
     }
 
-    unsafe fn shf(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+    unsafe fn shf(&mut self, r_dest: Register, r_src: Register, offset: isize) {
         let mut word = EMPTY_WORD;
-        ternary::copy(mut_ptr!(word), self.src(r_lhs), WORD_ISIZE);
+        ternary::copy(mut_ptr!(word), self.src(r_src), WORD_ISIZE);
 
-        let offset = self.read(r_rhs);
         let shifted_offset = offset + WORD_ISIZE;
         if shifted_offset < 0 || shifted_offset > WORD_ISIZE * 3 {
             return;
@@ -359,6 +364,10 @@ fn inst_half(inst: Word) -> Half {
     let mut half = EMPTY_HALF;
     unsafe { ternary::copy(mut_ptr!(half), tryte_ptr!(inst, 2), HALF_ISIZE) };
     half
+}
+
+fn inst_half_isize(inst: Word) -> isize {
+    unsafe { ternary::to_int(tryte_ptr!(inst, 2), HALF_ISIZE) }
 }
 
 fn inst_reladdr(inst: Word) -> RelAddr {
