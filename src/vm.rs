@@ -94,124 +94,109 @@ impl VM {
 
         match opcode {
             Opcode::Mov => {
-                self.mov(Register::from(t1), Register::from(t2));
+                self.op_mov(Register::from(t1), Register::from(t2));
             }
 
             Opcode::Movi => {
                 let half = inst_half(inst);
-                self.movi(Register::from(t1), half);
+                self.op_movi(Register::from(t1), half);
             }
 
             Opcode::Movw => {
                 let word = self.next_inst();
-                self.movw(Register::from(t1), word);
+                self.op_movw(Register::from(t1), word);
             }
 
             Opcode::Mova => {
                 let inst = self.next_inst();
                 let addr = inst_addr(inst);
-                self.mova(Register::from(t1), addr);
+                self.op_mova(Register::from(t1), addr);
             }
 
             Opcode::Add => {
-                self.add(Register::from(t1), Register::from(t2), Register::from(t3));
+                self.op_add(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
             Opcode::Addi => {
                 let half = inst_half(inst);
-                self.addi(Register::from(t1), half);
+                self.op_addi(Register::from(t1), half);
             }
 
             Opcode::Mul => {
-                self.mul(Register::from(t1), Register::from(t2));
+                self.op_mul(Register::from(t1), Register::from(t2));
             }
 
             Opcode::Not => {
-                self.not(Register::from(t1), Register::from(t2));
+                self.op_not(Register::from(t1), Register::from(t2));
             }
 
             Opcode::And => {
-                self.and(Register::from(t1), Register::from(t2), Register::from(t3));
+                self.op_and(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
             Opcode::Or => {
-                self.or(Register::from(t1), Register::from(t2), Register::from(t3));
+                self.op_or(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
             Opcode::Shf => {
-                let offset = self.read(Register::from(t3));
-                self.shf(Register::from(t1), Register::from(t2), offset);
+                self.op_shf(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
             Opcode::Shfi => {
                 let offset = inst_half_isize(inst);
-                self.shf(Register::from(t1), Register::from(t1), offset);
+                self.op_shfi(Register::from(t1), offset);
             }
 
             Opcode::Cmp => {
-                let dest = self.dest(Register::from(t1));
-                let lhs = self.src(Register::from(t2));
-                let rhs = self.src(Register::from(t3));
-
-                ternary::clear(dest, WORD_ISIZE);
-                *dest.offset(0) = ternary::compare(lhs, rhs, WORD_ISIZE);
+                self.op_cmp(Register::from(t1), Register::from(t2), Register::from(t3));
             }
 
             Opcode::Jmp => {
-                let inst = self.next_inst();
-                let addr = inst_addr(inst);
-                self.jmp(addr);
+                let addr = inst_addr(self.next_inst());
+                self.op_jmp(addr);
             }
 
             Opcode::JT => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Neg);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t == Trit::Neg);
             }
 
             Opcode::J0 => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Zero);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t == Trit::Zero);
             }
 
             Opcode::J1 => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t == Trit::Pos);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t == Trit::Pos);
             }
 
             Opcode::JT0 => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Pos);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t != Trit::Pos);
             }
 
             Opcode::JT1 => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Zero);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t != Trit::Zero);
             }
 
             Opcode::J01 => {
-                let r = Register::from(t1);
                 let addr = inst_reladdr(inst);
-                self.jmp_rel_if_trit(r, addr, |t| t != Trit::Neg);
+                self.op_jmp_conditional(Register::from(t1), addr, |t| t != Trit::Neg);
             }
 
             Opcode::Call => {
-                let inst = self.next_inst();
-                let addr = inst_addr(inst);
-                self.call(addr);
+                let addr = inst_addr(self.next_inst());
+                self.op_call(addr);
             }
 
             Opcode::Ret => {
-                self.ret();
+                self.op_ret();
             }
 
             Opcode::Syscall => {
-                let index = self.read(Register::S0);
-                self.syscall(index);
+                self.op_syscall(Register::S0);
             }
 
             Opcode::Halt => {
@@ -224,40 +209,38 @@ impl VM {
         self.clear(Register::ZERO);
     }
 
-    unsafe fn mov(&mut self, r_dest: Register, r_src: Register) {
+    unsafe fn op_mov(&mut self, r_dest: Register, r_src: Register) {
         let dest = self.dest(r_dest);
         let src = self.src(r_src);
         ternary::copy(dest, src, WORD_ISIZE);
     }
 
-    unsafe fn movi(&mut self, r_dest: Register, half: Half) {
+    unsafe fn op_movi(&mut self, r_dest: Register, half: Half) {
         let dest = self.dest(r_dest);
         ternary::clear(dest, WORD_ISIZE);
         ternary::copy(dest, ptr!(half), HALF_ISIZE);
     }
 
-    unsafe fn movw(&mut self, r_dest: Register, word: Word) {
+    unsafe fn op_movw(&mut self, r_dest: Register, word: Word) {
         let dest = self.dest(r_dest);
         ternary::copy(dest, ptr!(word), WORD_ISIZE);
     }
 
-    unsafe fn mova(&mut self, r_dest: Register, addr: Addr) {
+    unsafe fn op_mova(&mut self, r_dest: Register, addr: Addr) {
         let dest = self.dest(r_dest);
         ternary::from_int(dest, addr as isize, WORD_ISIZE);
     }
 
-    unsafe fn add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+    unsafe fn op_add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
         let dest = self.dest(r_dest);
         let lhs = self.src(r_lhs);
         let rhs = self.src(r_rhs);
 
         ternary::clear(dest, WORD_ISIZE);
-        let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
-        self.clear(Register::HI);
-        ternary::set_trit(self.dest(Register::HI), 0, carry);
+        self.add(dest, lhs, rhs, WORD_ISIZE);
     }
 
-    unsafe fn addi(&mut self, r_dest: Register, half: Half) {
+    unsafe fn op_addi(&mut self, r_dest: Register, half: Half) {
         let dest = self.dest(r_dest);
         let lhs = dest;
 
@@ -265,12 +248,16 @@ impl VM {
         let rhs = mut_ptr!(word);
 
         ternary::copy(rhs, ptr!(half), HALF_ISIZE);
-        let carry = ternary::add(dest, lhs, rhs, WORD_ISIZE);
+        self.add(dest, lhs, rhs, WORD_ISIZE);
+    }
+
+    unsafe fn add(&mut self, dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize) {
+        let carry = ternary::add(dest, lhs, rhs, len);
         self.clear(Register::HI);
         ternary::set_trit(self.dest(Register::HI), 0, carry);
     }
 
-    unsafe fn mul(&mut self, r_lhs: Register, r_rhs: Register) {
+    unsafe fn op_mul(&mut self, r_lhs: Register, r_rhs: Register) {
         let lhs = self.src(r_lhs);
         let rhs = self.src(r_rhs);
 
@@ -279,11 +266,11 @@ impl VM {
         ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
     }
 
-    unsafe fn not(&mut self, r_dest: Register, r_src: Register) {
+    unsafe fn op_not(&mut self, r_dest: Register, r_src: Register) {
         ternary::map(self.dest(r_dest), self.src(r_src), WORD_ISIZE, |t| -t);
     }
 
-    unsafe fn and(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+    unsafe fn op_and(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
         ternary::zip(self.dest(r_dest),
                      self.src(r_lhs),
                      self.src(r_rhs),
@@ -291,7 +278,7 @@ impl VM {
                      |t1, t2| t1 & t2);
     }
 
-    unsafe fn or(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+    unsafe fn op_or(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
         ternary::zip(self.dest(r_dest),
                      self.src(r_lhs),
                      self.src(r_rhs),
@@ -299,22 +286,35 @@ impl VM {
                      |t1, t2| t1 | t2);
     }
 
-    unsafe fn shf(&mut self, r_dest: Register, r_src: Register, offset: isize) {
+    unsafe fn op_shf(&mut self, r_dest: Register, r_src: Register, r_offset: Register) {
+        let dest = self.dest(r_dest);
+        let src = self.src(r_src);
+        let offset = self.read(r_offset);
+        self.shift(dest, src, offset);
+    }
+
+    unsafe fn op_shfi(&mut self, r: Register, offset: isize) {
+        let dest = self.dest(r);
+        let src = self.src(r);
+        self.shift(dest, src, offset);
+    }
+
+    unsafe fn shift(&mut self, dest: *mut Trit, src: *const Trit, offset: isize) {
         let mut word = EMPTY_WORD;
-        ternary::copy(mut_ptr!(word), self.src(r_src), WORD_ISIZE);
+        ternary::copy(mut_ptr!(word), src, WORD_ISIZE);
 
         let shifted_offset = offset + WORD_ISIZE;
         if shifted_offset < 0 || shifted_offset > WORD_ISIZE * 3 {
             return;
         }
 
+        ternary::clear(dest, WORD_ISIZE);
         self.clear(Register::LO);
-        self.clear(r_dest);
         self.clear(Register::HI);
 
         let src = ptr!(word);
         let lo = self.dest(Register::LO);
-        let mid = self.dest(r_dest);
+        let mid = dest;
         let hi = self.dest(Register::HI);
 
         let blocks = vec![
@@ -325,36 +325,52 @@ impl VM {
         ternary::copy_blocks(src, WORD_SIZE, shifted_offset as usize, blocks);
     }
 
-    fn jmp(&mut self, addr: Addr) {
+    fn op_cmp(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
+        let dest = self.dest(r_dest);
+        let lhs = self.src(r_lhs);
+        let rhs = self.src(r_rhs);
+
+        unsafe {
+            ternary::clear(dest, WORD_ISIZE);
+            *dest.offset(0) = ternary::compare(lhs, rhs, WORD_ISIZE);
+        }
+    }
+
+    fn op_jmp(&mut self, addr: Addr) {
+        self.jump(addr);
+    }
+
+    fn jump(&mut self, addr: Addr) {
         self.pc = addr;
     }
 
-    fn jmp_rel(&mut self, addr: RelAddr) {
-        self.pc = (self.pc as RelAddr + addr) as Addr;
-    }
-
-    fn jmp_rel_if_trit<F>(&mut self, r: Register, addr: RelAddr, f: F)
+    fn op_jmp_conditional<F>(&mut self, r: Register, addr: RelAddr, f: F)
         where F: Fn(Trit) -> bool
     {
         let src = self.src(r);
         let trit = unsafe { *src.offset(0) };
         if f(trit) {
-            self.jmp_rel(addr);
+            self.jump_relative(addr);
         }
     }
 
-    unsafe fn call(&mut self, addr: Addr) {
+    fn jump_relative(&mut self, addr: RelAddr) {
+        self.pc = (self.pc as RelAddr + addr) as Addr;
+    }
+
+    unsafe fn op_call(&mut self, addr: Addr) {
         let pc = self.pc as isize;
         self.write(Register::RA, pc);
-        self.jmp(addr);
+        self.jump(addr);
     }
 
-    unsafe fn ret(&mut self) {
+    unsafe fn op_ret(&mut self) {
         let addr = self.read(Register::RA) as Addr;
-        self.jmp(addr);
+        self.jump(addr);
     }
 
-    unsafe fn syscall(&mut self, index: isize) {
+    unsafe fn op_syscall(&mut self, r: Register) {
+        let index = self.read(r);
         let syscall = Syscall::from(index);
         syscall.perform(self);
     }

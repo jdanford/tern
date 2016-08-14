@@ -194,9 +194,3 @@ impl fmt::Debug for Opcode {
         f.write_str(self.name())
     }
 }
-
-impl fmt::Display for Opcode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}

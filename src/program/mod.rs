@@ -1,8 +1,8 @@
 pub mod instructions;
 pub mod parser;
 pub mod data;
-pub mod decoded;
-pub mod encoded;
+pub mod decode;
+pub mod encode;
 
-pub use self::decoded::DecodedProgram;
-pub use self::encoded::EncodedProgram;
+pub use self::decode::DecodedProgram;
+pub use self::encode::EncodedProgram;

@@ -213,9 +213,3 @@ impl fmt::Debug for Register {
         f.write_str(self.name())
     }
 }
-
-impl fmt::Display for Register {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
