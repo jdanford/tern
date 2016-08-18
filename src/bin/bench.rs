@@ -13,7 +13,7 @@ fn parse_and_run() {
         %string "Hello!"
 
     .code
-    start:
+    __start:
         movi $a0, 103
         jmp end
 

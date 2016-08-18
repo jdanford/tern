@@ -1,0 +1,50 @@
+.include syscalls.tasm
+
+.data
+message:
+    %string "Here's a random seed:\n"
+
+line:
+    %string "------------------------\n"
+
+newline:
+    %string "\n"
+
+.code
+__start:
+    mova $a0, message
+    call printString
+
+    call getRand
+    call printTernary
+    mov $s2, $a0
+
+    mova $a0, newline
+    call printString
+
+    movi $s0, 0
+    movi $s1, 10
+
+loop:
+    cmp $t0, $s0, $s1
+    j01 $t0, end
+
+    mova $a0, line
+    call printString
+
+    mov $a0, $s0
+    call printTernary
+    mova $a0, newline
+    call printString
+
+    mul $s0, $s2
+    or $a0, $lo, $hi
+    call printTernary
+    mova $a0, newline
+    call printString
+
+    addi $s0, 1
+    jmp loop
+
+end:
+    halt

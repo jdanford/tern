@@ -1,0 +1,13 @@
+.code
+__start:
+    call a
+    halt
+
+a:
+    mov $s0, $ra
+    call b
+    mov $ra, $s0
+    ret
+
+b:
+    ret

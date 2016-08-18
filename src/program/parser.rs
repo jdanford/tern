@@ -1,4 +1,5 @@
 use regex;
+use std::char;
 use std::io;
 
 use ternary;
@@ -12,7 +13,7 @@ mod patterns {
     pub static TERNARY: &'static str = r"0t([10T]+)";
     pub static LABEL: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*):";
     pub static STATEMENT: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*)(\s+(.*))?";
-    pub static STRING: &'static str = r#"^\s*"((?:\\"|[^"])+)"\s*$"#;
+    pub static STRING: &'static str = r#"^\s*"(.+)"\s*$"#;
 }
 
 #[derive(Clone, Debug)]
@@ -52,6 +53,7 @@ pub enum ParseError {
     RegexMissingCapture,
     InvalidCodeSection,
     InvalidDataSection,
+    InvalidEscapeSequence(String),
     InvalidLabel(String),
     InvalidDataType(String),
     InvalidOpcode(String),
@@ -220,8 +222,52 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
 fn parse_string(s: &str) -> Result<String, ParseError> {
     with_regex_captures(patterns::STRING, s, |ref captures| {
         let string = try!(get_capture(captures, 1));
-        Ok(string.to_string())
+        let unescaped_string = try!(unescape_string(string));
+        Ok(unescaped_string)
     })
+}
+
+fn unescape_string(s: &str) -> Result<String, ParseError> {
+    let mut result = String::new();
+    let mut chars = s.chars();
+
+    while let Some(c) = chars.next() {
+        let unescaped = if c == '\\' {
+            try!(unescape_chars(&mut chars))
+        } else {
+            c
+        };
+
+        result.push(unescaped);
+    }
+
+    Ok(result)
+}
+
+fn unescape_chars<I>(chars: &mut I) -> Result<char, ParseError> where I: Iterator<Item=char> {
+    match chars.next() {
+        Some('u') => {
+            let seq: String = chars.take(4).collect();
+
+            let mut code = 0;
+            for c in seq.chars() {
+                let n = try!(c
+                    .to_digit(16)
+                    .ok_or_else(|| ParseError::InvalidEscapeSequence(seq.clone())));
+                code = code * 16 + n;
+            }
+
+            char::from_u32(code).ok_or_else(|| ParseError::InvalidEscapeSequence(seq.clone()))
+        }
+        Some('b') => Ok('\x08'),
+        Some('f') => Ok('\x0c'),
+        Some('n') => Ok('\n'),
+        Some('r') => Ok('\r'),
+        Some('t') => Ok('\t'),
+        Some('\\') => Ok('\\'),
+        Some('"') => Ok('"'),
+        _ => Err(ParseError::InvalidEscapeSequence("\\".to_string())),
+    }
 }
 
 fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, ParseError> {

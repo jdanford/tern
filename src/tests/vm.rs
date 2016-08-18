@@ -19,10 +19,11 @@ fn test_program<F: Fn(&mut VM)>(code: &str, f: F) {
 #[test]
 fn vm_mov() {
     let code = r#"
-        movi $a0, 40
-        movi $a1, 13
-        mov $a0, $a1
-        halt
+        __start:
+            movi $a0, 40
+            movi $a1, 13
+            mov $a0, $a1
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -34,11 +35,12 @@ fn vm_mov() {
 #[test]
 fn vm_add() {
     let code = r#"
-        movi $a0, 0
-        movi $a1, 7
-        movi $a2, -2
-        add $a0, $a1, $a2
-        halt
+        __start:
+            movi $a0, 0
+            movi $a1, 7
+            movi $a2, -2
+            add $a0, $a1, $a2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -51,11 +53,12 @@ fn vm_add() {
 #[test]
 fn vm_mul() {
     let code = r#"
-        movi $hi, 999
-        movi $a1, -15
-        movi $a2, -3
-        mul $a1, $a2
-        halt
+        __start:
+            movi $hi, 999
+            movi $a1, -15
+            movi $a2, -3
+            mul $a1, $a2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -67,9 +70,10 @@ fn vm_mul() {
 #[test]
 fn vm_not() {
     let code = r#"
-        movw $a1, 0t10T010T010T010T010T010T0
-        not $a0, $a1
-        halt
+        __start:
+            movw $a1, 0t10T010T010T010T010T010T0
+            not $a0, $a1
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -80,10 +84,11 @@ fn vm_not() {
 #[test]
 fn vm_and() {
     let code = r#"
-        movw $a1, 0t111111111111111111111000
-        movw $a2, 0t11T111111111111111111111
-        and $a0, $a1, $a2
-        halt
+        __start:
+            movw $a1, 0t111111111111111111111000
+            movw $a2, 0t11T111111111111111111111
+            and $a0, $a1, $a2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -94,10 +99,11 @@ fn vm_and() {
 #[test]
 fn vm_or() {
     let code = r#"
-        movw $a1, 0tTTTT0000TTTT000011110000
-        movw $a2, 0t10T010T010T010T010T010T0
-        and $a0, $a1, $a2
-        halt
+        __start:
+            movw $a1, 0tTTTT0000TTTT000011110000
+            movw $a2, 0t10T010T010T010T010T010T0
+            and $a0, $a1, $a2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -108,12 +114,13 @@ fn vm_or() {
 #[test]
 fn vm_shf() {
     let code = r#"
-        movw $a1, 0t111111111111111111111111
-        movi $a2, 2
-        movi $lo, 123
-        movi $hi, 456
-        shf $a0, $a1, $a2
-        halt
+        __start:
+            movw $a1, 0t111111111111111111111111
+            movi $a2, 2
+            movi $lo, 123
+            movi $hi, 456
+            shf $a0, $a1, $a2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -126,11 +133,12 @@ fn vm_shf() {
 #[test]
 fn vm_shfi() {
     let code = r#"
-        movw $a0, 0t111111111111111111111111
-        movi $lo, 123
-        movi $hi, 456
-        shfi $a0, 2
-        halt
+        __start:
+            movw $a0, 0t111111111111111111111111
+            movi $lo, 123
+            movi $hi, 456
+            shfi $a0, 2
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -143,16 +151,17 @@ fn vm_shfi() {
 #[test]
 fn vm_cmp() {
     let code = r#"
-        movi $a0, 0tT1
-        movi $a1, 0t01
-        movi $a2, 0t1T
+        __start:
+            movi $a0, 0tT1
+            movi $a1, 0t01
+            movi $a2, 0t1T
 
-        cmp $t0, $a0, $a1
-        cmp $t1, $a1, $a2
-        cmp $t2, $a2, $a0
-        cmp $t3, $a2, $a2
+            cmp $t0, $a0, $a1
+            cmp $t1, $a1, $a2
+            cmp $t2, $a2, $a0
+            cmp $t3, $a2, $a2
 
-        halt
+            halt
     "#;
 
     test_program(code, |ref mut vm| {
@@ -166,7 +175,7 @@ fn vm_cmp() {
 #[test]
 fn vm_jmp() {
     let code = r#"
-        start:
+        __start:
             movi $a0, 103
             jmp end
 
@@ -186,7 +195,7 @@ fn vm_jmp() {
 #[test]
 fn vm_jt() {
     let code = r#"
-        start:
+        __start:
             movi $a0, 103
             movi $a1, 0tT
             jT $a1, end

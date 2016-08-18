@@ -25,17 +25,17 @@ impl Syscall {
                 let addr = vm.read(Register::A0);
                 let local_memory = vm.memory.offset(addr);
                 let (s, _) = text::decode_str(local_memory);
-                println!("{}", s);
+                print!("{}", s);
             }
 
             Syscall::PrintDecimal => {
                 let n = vm.read(Register::A0);
-                println!("{}", n);
+                print!("{}", n);
             }
 
             Syscall::PrintTernary => {
                 let src = vm.src(Register::A0);
-                println!("{}", ternary::to_str(src, WORD_ISIZE));
+                print!("{}", ternary::to_str(src, WORD_ISIZE));
             }
 
             Syscall::GetRand => {

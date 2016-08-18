@@ -195,7 +195,7 @@ impl VM {
             }
 
             Opcode::Syscall => {
-                self.op_syscall(Register::S0);
+                self.op_syscall(Register::T0);
             }
 
             Opcode::Halt => {
