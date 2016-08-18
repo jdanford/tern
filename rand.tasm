@@ -1,3 +1,5 @@
+.include syscalls.tasm
+
 .data
 message:
     %string "Here's a random number:"
@@ -6,7 +8,7 @@ line:
     %string "------------------------"
 
 .code
-start:
+__start:
     mova $a0, message
     call printString
 
@@ -42,18 +44,3 @@ loop:
 
 end:
     halt
-
-printString:
-    movi $s0, 0 ; PrintString
-    syscall
-    ret
-
-printTernary:
-    movi $s0, 2 ; PrintTernary
-    syscall
-    ret
-
-getRand:
-    movi $s0, 3 ; GetRand
-    syscall
-    ret

@@ -1,0 +1,20 @@
+.code
+printString:
+    movi $s0, 0 ; PrintString
+    syscall
+    ret
+
+printDecimal:
+    movi $s0, 1 ; PrintDecimal
+    syscall
+    ret
+
+printTernary:
+    movi $s0, 2 ; PrintTernary
+    syscall
+    ret
+
+getRand:
+    movi $s0, 3 ; GetRand
+    syscall
+    ret

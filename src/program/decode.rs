@@ -98,26 +98,36 @@ impl DecodedProgram {
 
     pub fn read_line(&mut self, raw_line: &str) -> Result<(), ParseError> {
         let line = clean_line(raw_line);
+        let tokens: Vec<&str> = line.split_whitespace().collect();
 
-        if !line.is_empty() {
-            match line {
-                ".code" => {
-                    self.read_mode = ReadMode::Code;
+        if tokens.len() == 0 {
+            return Ok(());
+        }
+
+        match tokens[0] {
+            ".include" => {
+                let paths = &tokens[1..];
+                for path in paths {
+                    try!(self.read_file(path));
                 }
+            }
 
-                ".data" => {
-                    self.read_mode = ReadMode::Data;
-                }
+            ".code" => {
+                self.read_mode = ReadMode::Code;
+            }
 
-                _ => {
-                    match self.read_mode {
-                        ReadMode::Data => {
-                            self.data.push(try!(parse_data_line(line)));
-                        }
+            ".data" => {
+                self.read_mode = ReadMode::Data;
+            }
 
-                        ReadMode::Code => {
-                            self.code.push(try!(parse_code_line(line)));
-                        }
+            _ => {
+                match self.read_mode {
+                    ReadMode::Data => {
+                        self.data.push(try!(parse_data_line(line)));
+                    }
+
+                    ReadMode::Code => {
+                        self.code.push(try!(parse_code_line(line)));
                     }
                 }
             }

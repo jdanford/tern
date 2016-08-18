@@ -10,10 +10,13 @@ use program::parser::{CodeDecl, DataDecl};
 use util::next_aligned_addr;
 use vm::PROGRAM_MAGIC_NUMBER;
 
+static START_LABEL: &'static str = "__start";
+
 #[derive(Debug)]
 pub enum EncodeError {
     InsufficientMemory(usize, usize),
     InvalidLabel(String),
+    MissingRequiredLabel(String),
     IntOutOfRange(isize, isize, isize),
 }
 
@@ -75,9 +78,13 @@ impl EncodedProgram {
         let _ = try!(self.encode_data_section(&program.data[..]));
 
         self.pc = next_aligned_addr(self.pc, WORD_SIZE);
-        let pc_start = self.pc;
 
         let _ = try!(self.encode_code_section(&program.code[..]));
+
+        let pc_start = try!(self.labels
+            .get(START_LABEL)
+            .cloned()
+            .ok_or_else(|| EncodeError::MissingRequiredLabel(START_LABEL.to_string())));
 
         unsafe {
             let local_memory = self.memory.offset(pc_start_offset as isize);
