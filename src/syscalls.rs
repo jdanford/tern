@@ -1,3 +1,4 @@
+use rand;
 use std::mem::transmute;
 use std::process;
 
@@ -6,13 +7,15 @@ use ternary;
 use registers::Register;
 use vm::VM;
 use text;
+use util;
 
 #[derive(Debug)]
 pub enum Syscall {
     PrintString = 0,
     PrintDecimal = 1,
     PrintTernary = 2,
-    Exit = 3,
+    GetRand = 3,
+    Exit = 4,
 }
 
 impl Syscall {
@@ -33,6 +36,12 @@ impl Syscall {
             Syscall::PrintTernary => {
                 let src = vm.src(Register::A0);
                 println!("{}", ternary::to_str(src, WORD_ISIZE));
+            }
+
+            Syscall::GetRand => {
+                let dest = vm.dest(Register::A0);
+                let mut rng = rand::thread_rng();
+                util::random_word(dest, &mut rng, WORD_ISIZE);
             }
 
             Syscall::Exit => {

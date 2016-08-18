@@ -5,4 +5,5 @@ authors = ["Jordan Danford <jordandanford@gmail.com>"]
 
 [dependencies]
 libc = "*"
+rand = "0.3"
 regex = "0.1"

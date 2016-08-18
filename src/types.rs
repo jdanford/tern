@@ -1,4 +1,4 @@
-use trit::Trit;
+pub use trit::Trit;
 
 pub const TRYTE_MIN: isize = -364;
 pub const TRYTE_MAX: isize = 364;

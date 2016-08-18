@@ -1,22 +1,13 @@
-use trit::Trit;
 use types::*;
 
 pub unsafe fn set_all(trits: *mut Trit, trit: Trit, len: isize) {
     for i in 0..len {
-        set_trit(trits, i, trit);
+        *trits.offset(i) = trit;
     }
 }
 
 pub unsafe fn clear(trits: *mut Trit, len: isize) {
     set_all(trits, Trit::Zero, len);
-}
-
-pub unsafe fn get_trit(trits: *mut Trit, i: isize) -> Trit {
-    *trits.offset(i)
-}
-
-pub unsafe fn set_trit(trits: *mut Trit, i: isize, trit: Trit) {
-    *trits.offset(i) = trit;
 }
 
 pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
@@ -137,47 +128,11 @@ pub fn write_trytes<I>(trits: *mut Trit, iterable: I)
     }
 }
 
-pub fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
-    unsafe {
-        (to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
-         to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
-         to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
-         to_int(tryte_offset!(trits, 3), TRYTE_ISIZE))
-    }
-}
-
-pub unsafe fn get_lst(trits: *const Trit, len: isize) -> Trit {
-    for i in 0..len - 1 {
-        let trit = *trits.offset(i);
-        if trit != Trit::Zero {
-            return trit;
-        }
-    }
-
-    Trit::Zero
-}
-
-pub unsafe fn get_mst(trits: *const Trit, len: isize) -> Trit {
-    for i in (0..len - 1).rev() {
-        let trit = *trits.offset(i);
-        if trit != Trit::Zero {
-            return trit;
-        }
-    }
-
-    Trit::Zero
-}
-
-pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
-    for i in (0..len - 1).rev() {
-        let lt = *lhs.offset(i);
-        let rt = *rhs.offset(i);
-        if lt != rt {
-            return Trit::from_ordering(lt.cmp(&rt));
-        }
-    }
-
-    return Trit::Zero;
+pub unsafe fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
+    (to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
+     to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
+     to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
+     to_int(tryte_offset!(trits, 3), TRYTE_ISIZE))
 }
 
 pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F)
@@ -222,4 +177,59 @@ pub unsafe fn multiply(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len:
         carry = addmul(dest.offset(i), lhs, *rhs.offset(i), len);
         *dest.offset(i + len) = carry;
     }
+}
+
+pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
+    for i in (0..len - 1).rev() {
+        let lt = *lhs.offset(i);
+        let rt = *rhs.offset(i);
+        if lt != rt {
+            return Trit::from_ordering(lt.cmp(&rt));
+        }
+    }
+
+    return Trit::Zero;
+}
+
+pub unsafe fn lowest_trit(trits: *const Trit, len: isize) -> Trit {
+    for i in 0..len - 1 {
+        let trit = *trits.offset(i);
+        if trit != Trit::Zero {
+            return trit;
+        }
+    }
+
+    Trit::Zero
+}
+
+pub unsafe fn highest_trit(trits: *const Trit, len: isize) -> Trit {
+    for i in (0..len - 1).rev() {
+        let trit = *trits.offset(i);
+        if trit != Trit::Zero {
+            return trit;
+        }
+    }
+
+    Trit::Zero
+}
+
+pub unsafe fn popcount(trits: *const Trit, len: isize) -> (isize, isize) {
+    let mut hi_count = 0;
+    let mut lo_count = 0;
+
+    for i in 0..len {
+        match *trits.offset(i) {
+            Trit::Neg => {
+                lo_count += 1;
+            }
+
+            Trit::Pos => {
+                hi_count += 1;
+            }
+
+            _ => {}
+        }
+    }
+
+    (hi_count, lo_count)
 }

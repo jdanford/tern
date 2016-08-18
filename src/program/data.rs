@@ -1,4 +1,3 @@
-use trit::Trit;
 use ternary;
 use types::*;
 use text;

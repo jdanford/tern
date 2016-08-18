@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use trit::Trit;
 use ternary;
 use types::*;
 use opcodes::Opcode;

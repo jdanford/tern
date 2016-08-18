@@ -1,6 +1,5 @@
 use std::char;
 
-use trit::Trit;
 use trit::Trit::*;
 use ternary;
 use types::*;

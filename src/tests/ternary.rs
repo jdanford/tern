@@ -92,38 +92,6 @@ fn ternary_copy_blocks() {
 }
 
 #[test]
-fn ternary_get_lst() {
-    unsafe {
-        let mut trits = EMPTY_TRYTE;
-
-        ternary::from_str(mut_ptr!(trits), "000000");
-        assert_eq!(ternary::get_lst(ptr!(trits), 6), Zero);
-
-        ternary::from_str(mut_ptr!(trits), "0T0010");
-        assert_eq!(ternary::get_lst(ptr!(trits), 6), Pos);
-
-        ternary::from_str(mut_ptr!(trits), "00000T");
-        assert_eq!(ternary::get_lst(ptr!(trits), 6), Neg);
-    }
-}
-
-#[test]
-fn ternary_get_mst() {
-    unsafe {
-        let mut trits = EMPTY_TRYTE;
-
-        ternary::from_str(mut_ptr!(trits), "000000");
-        assert_eq!(ternary::get_mst(ptr!(trits), 6), Zero);
-
-        ternary::from_str(mut_ptr!(trits), "0T0010");
-        assert_eq!(ternary::get_mst(ptr!(trits), 6), Neg);
-
-        ternary::from_str(mut_ptr!(trits), "010000");
-        assert_eq!(ternary::get_mst(ptr!(trits), 6), Pos);
-    }
-}
-
-#[test]
 fn ternary_add() {
     unsafe {
         let mut a = EMPTY_TRYTE;
@@ -156,5 +124,51 @@ fn ternary_multiply() {
 
         ternary::multiply(mut_ptr!(c), ptr!(a), ptr!(b), 6);
         assert_eq!(c, d);
+    }
+}
+
+#[test]
+fn ternary_lowest_trit() {
+    unsafe {
+        let mut trits = EMPTY_TRYTE;
+
+        ternary::from_str(mut_ptr!(trits), "000000");
+        assert_eq!(ternary::lowest_trit(ptr!(trits), 6), Zero);
+
+        ternary::from_str(mut_ptr!(trits), "0T0010");
+        assert_eq!(ternary::lowest_trit(ptr!(trits), 6), Pos);
+
+        ternary::from_str(mut_ptr!(trits), "00000T");
+        assert_eq!(ternary::lowest_trit(ptr!(trits), 6), Neg);
+    }
+}
+
+#[test]
+fn ternary_highest_trit() {
+    unsafe {
+        let mut trits = EMPTY_TRYTE;
+
+        ternary::from_str(mut_ptr!(trits), "000000");
+        assert_eq!(ternary::highest_trit(ptr!(trits), 6), Zero);
+
+        ternary::from_str(mut_ptr!(trits), "0T0010");
+        assert_eq!(ternary::highest_trit(ptr!(trits), 6), Neg);
+
+        ternary::from_str(mut_ptr!(trits), "010000");
+        assert_eq!(ternary::highest_trit(ptr!(trits), 6), Pos);
+    }
+}
+
+#[test]
+fn ternary_popcount() {
+    unsafe {
+        let mut a = EMPTY_TRYTE;
+        ternary::from_str(mut_ptr!(a), "000000");
+
+        let mut b = EMPTY_TRYTE;
+        ternary::from_str(mut_ptr!(b), "1T11T1");
+
+        assert_eq!(ternary::popcount(ptr!(a), TRYTE_ISIZE), (0, 0));
+        assert_eq!(ternary::popcount(ptr!(b), TRYTE_ISIZE), (4, 2));
     }
 }

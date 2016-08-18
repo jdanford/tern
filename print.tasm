@@ -4,17 +4,17 @@ message:
 
 .code
 start:
-    movi $s0, 0
+    movi $s0, 0 ; PrintString
     mova $a0, message
     syscall
 
     movi $a1, 123
     mov $a0, $a1
 
-    movi $s0, 1
+    movi $s0, 1 ; PrintDecimal
     syscall
 
-    movi $s0, 2
+    movi $s0, 2 ; PrintTernary
     syscall
 
     halt

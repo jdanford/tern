@@ -1,0 +1,59 @@
+.data
+message:
+    %string "Here's a random number:"
+
+line:
+    %string "------------------------"
+
+.code
+start:
+    mova $a0, message
+    call printString
+
+    call getRand
+    call printTernary
+
+    mov $a2, $a0
+
+    movi $a0, 0
+    movi $a1, 10
+
+loop:
+    cmp $t0, $a0, $a1
+    j01 $t0, end
+
+    mov $t0, $a0 ; {
+
+    mova $a0, line
+    call printString
+
+    mov $a0, $t0
+    call printTernary
+
+    mul $t0, $a2
+
+    mov $a0, $lo
+    call printTernary
+
+    mov $a0, $t0 ; }
+
+    addi $a0, 1
+    jmp loop
+
+end:
+    halt
+
+printString:
+    movi $s0, 0 ; PrintString
+    syscall
+    ret
+
+printTernary:
+    movi $s0, 2 ; PrintTernary
+    syscall
+    ret
+
+getRand:
+    movi $s0, 3 ; GetRand
+    syscall
+    ret

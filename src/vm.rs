@@ -1,7 +1,6 @@
 use libc::{malloc, free};
 use std::mem::transmute;
 
-use trit::Trit;
 use ternary;
 use types::*;
 use opcodes::Opcode;
@@ -242,7 +241,7 @@ impl VM {
 
     unsafe fn op_addi(&mut self, r_dest: Register, half: Half) {
         let dest = self.dest(r_dest);
-        let lhs = dest;
+        let lhs = self.src(r_dest);
 
         let mut word = EMPTY_WORD;
         let rhs = mut_ptr!(word);
@@ -254,7 +253,7 @@ impl VM {
     unsafe fn add(&mut self, dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len: isize) {
         let carry = ternary::add(dest, lhs, rhs, len);
         self.clear(Register::HI);
-        ternary::set_trit(self.dest(Register::HI), 0, carry);
+        *self.dest(Register::HI).offset(0) = carry;
     }
 
     unsafe fn op_mul(&mut self, r_lhs: Register, r_rhs: Register) {
@@ -314,14 +313,9 @@ impl VM {
 
         let src = ptr!(word);
         let lo = self.dest(Register::LO);
-        let mid = dest;
         let hi = self.dest(Register::HI);
 
-        let blocks = vec![
-            (lo, WORD_SIZE),
-            (mid, WORD_SIZE),
-            (hi, WORD_SIZE),
-        ];
+        let blocks = vec![(lo, WORD_SIZE), (dest, WORD_SIZE), (hi, WORD_SIZE)];
         ternary::copy_blocks(src, WORD_SIZE, shifted_offset as usize, blocks);
     }
 

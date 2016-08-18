@@ -1,5 +1,7 @@
+use rand::Rng;
 use std::io::prelude::*;
 
+use ternary;
 use types::*;
 use vm::VM;
 use program::DecodedProgram;
@@ -11,6 +13,14 @@ pub fn next_aligned_addr(addr: Addr, alignment: usize) -> Addr {
         addr
     } else {
         addr - rem + alignment
+    }
+}
+
+pub fn random_word<R: Rng>(trits: *mut Trit, rng: &mut R, len: isize) {
+    unsafe { ternary::clear(trits, len) };
+
+    for (i, trit) in rng.gen_iter().take(len as usize).enumerate() {
+        unsafe { *trits.offset(i as isize) = trit };
     }
 }
 

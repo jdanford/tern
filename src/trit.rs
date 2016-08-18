@@ -1,3 +1,4 @@
+use rand::{Rand, Rng};
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Write;
@@ -154,5 +155,12 @@ impl fmt::Debug for Trit {
 impl fmt::Display for Trit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
+    }
+}
+
+impl Rand for Trit {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        let i: i8 = rng.gen_range(-1, 2);
+        Trit::from(i)
     }
 }

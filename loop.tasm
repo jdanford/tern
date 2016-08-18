@@ -7,7 +7,7 @@ loop:
     cmp $t0, $a0, $a1
     j01 $t0, end
 
-    movi $s0, 2
+    movi $s0, 2 ; PrintTernary
     syscall
 
     addi $a0, 1

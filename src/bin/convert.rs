@@ -1,7 +1,6 @@
 extern crate tern;
 
 use std::io;
-use tern::trit::Trit;
 use tern::ternary;
 use tern::types::*;
 
