@@ -124,6 +124,18 @@ impl VM {
                 self.op_load(Register::from(t1), Register::from(t2), t3, WORD_ISIZE);
             }
 
+            Opcode::St => {
+                self.op_store(Register::from(t1), Register::from(t2), t3, TRYTE_ISIZE);
+            }
+
+            Opcode::Sh => {
+                self.op_store(Register::from(t1), Register::from(t2), t3, HALF_ISIZE);
+            }
+
+            Opcode::Sw => {
+                self.op_store(Register::from(t1), Register::from(t2), t3, WORD_ISIZE);
+            }
+
             Opcode::Add => {
                 self.op_add(Register::from(t1), Register::from(t2), Register::from(t3));
             }
@@ -247,15 +259,24 @@ impl VM {
         ternary::from_int(dest, addr as isize, WORD_ISIZE);
     }
 
-    unsafe fn op_load(&mut self, r_dest: Register, r_src: Register, offset: isize, len: isize) {
+    unsafe fn op_load(&mut self, r_dest: Register, r_addr: Register, offset: isize, len: isize) {
         let dest = self.dest(r_dest);
 
-        let addr_src = self.src(r_src);
-        let base_addr = ternary::to_int(addr_src, len);
-        let addr = base_addr + offset;
-        let src = self.memory.offset(addr);
+        let addr_src = self.src(r_addr);
+        let addr = ternary::to_int(addr_src, len);
+        let src = self.memory.offset(addr + offset);
 
         ternary::clear(dest, WORD_ISIZE);
+        ternary::copy(dest, src, len);
+    }
+
+    unsafe fn op_store(&mut self, r_addr: Register, r_src: Register, offset: isize, len: isize) {
+        let src = self.src(r_src);
+
+        let addr_src = self.src(r_addr);
+        let addr = ternary::to_int(addr_src, len);
+        let dest = self.memory.offset(addr + offset);
+
         ternary::copy(dest, src, len);
     }
 

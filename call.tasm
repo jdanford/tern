@@ -13,23 +13,35 @@ stack_end:
 __start:
     mova $sp, stack_start
 
-    mov $a0, $sp
-    call printTernary
-    mova $a0, str_newline
-    call printString
-
-    mova $a0, stack_end
-    call printTernary
-    mova $a0, str_newline
-    call printString
-
+    call a
     halt
 
 a:
-    mov $s0, $ra
+    sw $sp, $ra, 0
+    addi $sp, 24
+
+    lw $a0, $sp, -24
+    call printTernary
+    mova $a0, str_newline
+    call printString
+
     call b
-    mov $ra, $s0
+
+    addi $sp, -24
+    lw $ra, $sp, 0
+
     ret
 
 b:
+    sw $sp, $ra, 0
+    addi $sp, 24
+
+    lw $a0, $sp, -48
+    call printTernary
+    mova $a0, str_newline
+    call printString
+
+    addi $sp, -24
+    lw $ra, $sp, 0
+
     ret
