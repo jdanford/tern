@@ -57,13 +57,17 @@ pub enum ParseError {
     InvalidEscapeSequence(String),
     InvalidLabel(String),
     InvalidDataType(String),
+    InvalidDataSpec(String),
     InvalidArity(String, usize, usize),
     InvalidOpcode(String),
     InvalidTernary(String, usize),
+    InvalidDecimal(String),
     InvalidRegister(String),
     RegexError(regex::Error),
     IOError(io::Error),
 }
+
+pub type ParseResult<T> = Result<T, ParseError>;
 
 pub fn clean_line<'a>(raw_line: &'a str) -> &'a str {
     let line = raw_line.trim();
@@ -86,7 +90,7 @@ pub fn line_is_data(line: &str) -> bool {
     line.chars().next().unwrap() == '%'
 }
 
-pub fn parse_code_line(line: &str) -> Result<CodeDecl, ParseError> {
+pub fn parse_code_line(line: &str) -> ParseResult<CodeDecl> {
     if line_is_label(line) {
         parse_label_line(line).map(CodeDecl::Label)
     } else {
@@ -94,7 +98,7 @@ pub fn parse_code_line(line: &str) -> Result<CodeDecl, ParseError> {
     }
 }
 
-pub fn parse_data_line(line: &str) -> Result<DataDecl, ParseError> {
+pub fn parse_data_line(line: &str) -> ParseResult<DataDecl> {
     if line_is_label(line) {
         parse_label_line(line).map(DataDecl::Label)
     } else if line_is_data(line) {
@@ -104,23 +108,23 @@ pub fn parse_data_line(line: &str) -> Result<DataDecl, ParseError> {
     }
 }
 
-fn compile_regex(pattern: &str) -> Result<regex::Regex, ParseError> {
+fn compile_regex(pattern: &str) -> ParseResult<regex::Regex> {
     regex::Regex::new(pattern).map_err(ParseError::RegexError)
 }
 
-fn get_capture<'a>(captures: &regex::Captures<'a>, i: usize) -> Result<&'a str, ParseError> {
+fn get_capture<'a>(captures: &regex::Captures<'a>, i: usize) -> ParseResult<&'a str> {
     captures.at(i).ok_or(ParseError::RegexMissingCapture)
 }
 
-fn with_regex_captures<T, F>(pattern: &str, s: &str, mut f: F) -> Result<T, ParseError>
-    where F: FnMut(&regex::Captures) -> Result<T, ParseError>
+fn with_regex_captures<T, F>(pattern: &str, s: &str, mut f: F) -> ParseResult<T>
+    where F: FnMut(&regex::Captures) -> ParseResult<T>
 {
     let re = try!(compile_regex(pattern));
     let captures = try!(re.captures(s).ok_or(ParseError::RegexMatchFailure));
     f(&captures)
 }
 
-pub fn parse_label_line(line: &str) -> Result<String, ParseError> {
+pub fn parse_label_line(line: &str) -> ParseResult<String> {
     with_regex_captures(patterns::LABEL, line, |ref captures| {
         if let Some(label) = captures.at(1) {
             Ok(label.to_string())
@@ -131,7 +135,7 @@ pub fn parse_label_line(line: &str) -> Result<String, ParseError> {
     })
 }
 
-fn parse_data(line: &str) -> Result<StaticData, ParseError> {
+fn parse_data(line: &str) -> ParseResult<StaticData> {
     with_regex_captures(patterns::STATEMENT, line, |ref captures| {
         let type_name = try!(get_capture(captures, 1));
         let rest = try!(get_capture(captures, 3));
@@ -139,7 +143,7 @@ fn parse_data(line: &str) -> Result<StaticData, ParseError> {
     })
 }
 
-fn parse_instruction(line: &str) -> Result<Instruction, ParseError> {
+fn parse_instruction(line: &str) -> ParseResult<Instruction> {
     with_regex_captures(patterns::STATEMENT, line, |ref captures| {
         let opcode_name = try!(get_capture(captures, 1));
         let args = if let Some(args_str) = captures.at(3) {
@@ -153,15 +157,19 @@ fn parse_instruction(line: &str) -> Result<Instruction, ParseError> {
     })
 }
 
-fn parse_label(s: &str) -> Result<String, ParseError> {
+fn parse_label(s: &str) -> ParseResult<String> {
     Ok(s.to_string())
 }
 
-fn parse_register(s: &str) -> Result<Register, ParseError> {
+fn parse_register(s: &str) -> ParseResult<Register> {
     s.parse().map_err(|name| ParseError::InvalidRegister(name))
 }
 
-fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
+fn parse_decimal(s: &str) -> ParseResult<isize> {
+    s.parse().map_err(|_| ParseError::InvalidDecimal(s.to_string()))
+}
+
+fn parse_tryte(s: &str) -> ParseResult<Tryte> {
     let mut tryte = EMPTY_TRYTE;
 
     if let Ok(int) = s.parse() {
@@ -181,7 +189,7 @@ fn parse_tryte(s: &str) -> Result<Tryte, ParseError> {
     })
 }
 
-fn parse_half(s: &str) -> Result<Half, ParseError> {
+fn parse_half(s: &str) -> ParseResult<Half> {
     let mut half = EMPTY_HALF;
 
     if let Ok(int) = s.parse() {
@@ -201,7 +209,7 @@ fn parse_half(s: &str) -> Result<Half, ParseError> {
     })
 }
 
-fn parse_word(s: &str) -> Result<Word, ParseError> {
+fn parse_word(s: &str) -> ParseResult<Word> {
     let mut word = EMPTY_WORD;
 
     if let Ok(int) = s.parse() {
@@ -221,7 +229,7 @@ fn parse_word(s: &str) -> Result<Word, ParseError> {
     })
 }
 
-fn parse_string(s: &str) -> Result<String, ParseError> {
+fn parse_string(s: &str) -> ParseResult<String> {
     with_regex_captures(patterns::STRING, s, |ref captures| {
         let string = try!(get_capture(captures, 1));
         let unescaped_string = try!(unescape_string(string));
@@ -229,7 +237,7 @@ fn parse_string(s: &str) -> Result<String, ParseError> {
     })
 }
 
-fn unescape_string(s: &str) -> Result<String, ParseError> {
+fn unescape_string(s: &str) -> ParseResult<String> {
     let mut result = String::new();
     let mut chars = s.chars();
 
@@ -246,9 +254,7 @@ fn unescape_string(s: &str) -> Result<String, ParseError> {
     Ok(result)
 }
 
-fn unescape_chars<I>(chars: &mut I) -> Result<char, ParseError>
-    where I: Iterator<Item = char>
-{
+fn unescape_chars<I>(chars: &mut I) -> ParseResult<char> where I: Iterator<Item = char> {
     match chars.next() {
         Some('u') => {
             let seq: String = chars.take(4).collect();
@@ -273,7 +279,7 @@ fn unescape_chars<I>(chars: &mut I) -> Result<char, ParseError>
     }
 }
 
-fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, ParseError> {
+fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> ParseResult<StaticData> {
     match type_name {
         "tryte" => {
             let tryte = try!(parse_tryte(rest));
@@ -298,13 +304,27 @@ fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, 
             Ok(StaticData::String(string))
         }
 
+        "array" => {
+            let mut parts = rest.split(" x ").map(|s| s.trim());
+            let data_str = try!(parts.next()
+                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string())));
+            let count_str = try!(parts.next()
+                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string())));
+
+            if let DataDecl::Data(data) = try!(parse_data_line(data_str)) {
+                let count = try!(parse_decimal(count_str));
+                assert!(count > 0);
+                Ok(StaticData::Array(Box::new(data), count as usize))
+            } else {
+                Err(ParseError::InvalidDataSpec(data_str.to_string()))
+            }
+        }
+
         _ => Err(ParseError::InvalidDataType(type_name.to_string())),
     }
 }
 
-fn instruction_from_parts<'a>(opcode_name: &'a str,
-                              args: &[&'a str])
-                              -> Result<Instruction, ParseError> {
+fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> ParseResult<Instruction> {
     if !Opcode::name_is_valid(opcode_name) {
         return Err(ParseError::InvalidOpcode(opcode_name.to_string()));
     }

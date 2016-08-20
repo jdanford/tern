@@ -8,6 +8,7 @@ pub enum StaticData {
     Half(isize),
     Word(isize),
     String(String),
+    Array(Box<StaticData>, usize),
 }
 
 #[derive(Debug)]
@@ -22,6 +23,7 @@ impl StaticData {
             StaticData::Half(_) => HALF_SIZE,
             StaticData::Word(_) => WORD_SIZE,
             StaticData::String(ref s) => WORD_SIZE + s.len() * TRYTE_SIZE,
+            StaticData::Array(ref data, count) => data.size() * count,
         }
     }
 
@@ -51,6 +53,14 @@ impl StaticData {
             }
 
             StaticData::String(ref s) => text::encode_str(memory, &s[..]) * TRYTE_SIZE + WORD_SIZE,
+
+            StaticData::Array(ref data, count) => {
+                for _ in 0..count {
+                    data.write(memory);
+                }
+
+                data.size() * count
+            }
         }
     }
 }

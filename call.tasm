@@ -1,6 +1,28 @@
+.include syscalls.tasm
+
+.data
+str_newline:
+    %string "\n"
+
+stack_start:
+    %array %word 0 x 24
+
+stack_end:
+
 .code
 __start:
-    call a
+    mova $sp, stack_start
+
+    mov $a0, $sp
+    call printTernary
+    mova $a0, str_newline
+    call printString
+
+    mova $a0, stack_end
+    call printTernary
+    mova $a0, str_newline
+    call printString
+
     halt
 
 a:
