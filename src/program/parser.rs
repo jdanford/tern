@@ -4,6 +4,7 @@ use std::io;
 
 use ternary;
 use types::*;
+use opcodes::Opcode;
 use registers::Register;
 use program::instructions::Instruction;
 use program::data::StaticData;
@@ -56,6 +57,7 @@ pub enum ParseError {
     InvalidEscapeSequence(String),
     InvalidLabel(String),
     InvalidDataType(String),
+    InvalidArity(String, usize, usize),
     InvalidOpcode(String),
     InvalidTernary(String, usize),
     InvalidRegister(String),
@@ -244,15 +246,16 @@ fn unescape_string(s: &str) -> Result<String, ParseError> {
     Ok(result)
 }
 
-fn unescape_chars<I>(chars: &mut I) -> Result<char, ParseError> where I: Iterator<Item=char> {
+fn unescape_chars<I>(chars: &mut I) -> Result<char, ParseError>
+    where I: Iterator<Item = char>
+{
     match chars.next() {
         Some('u') => {
             let seq: String = chars.take(4).collect();
 
             let mut code = 0;
             for c in seq.chars() {
-                let n = try!(c
-                    .to_digit(16)
+                let n = try!(c.to_digit(16)
                     .ok_or_else(|| ParseError::InvalidEscapeSequence(seq.clone())));
                 code = code * 16 + n;
             }
@@ -302,201 +305,163 @@ fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> Result<StaticData, 
 fn instruction_from_parts<'a>(opcode_name: &'a str,
                               args: &[&'a str])
                               -> Result<Instruction, ParseError> {
-    let arity = args.len();
+    if !Opcode::name_is_valid(opcode_name) {
+        return Err(ParseError::InvalidOpcode(opcode_name.to_string()));
+    }
 
-    match opcode_name {
-        "mov" => {
-            assert_eq!(arity, 2);
+    let opcode = Opcode::from(opcode_name);
+
+    let expected_arity = opcode.arity();
+    let actual_arity = args.len();
+    if expected_arity != actual_arity {
+        return Err(ParseError::InvalidArity(opcode_name.to_string(), expected_arity, actual_arity));
+    }
+
+    match opcode {
+        Opcode::Mov => {
             Ok(Instruction::Mov(try!(parse_register(args[0])), try!(parse_register(args[1]))))
         }
 
-        "movi" => {
-            assert_eq!(arity, 2);
+        Opcode::Movi => {
             Ok(Instruction::Movi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "movw" => {
-            assert_eq!(arity, 2);
+        Opcode::Movw => {
             Ok(Instruction::Movw(try!(parse_register(args[0])), try!(parse_word(args[1]))))
         }
 
-        "mova" => {
-            assert_eq!(arity, 2);
+        Opcode::Mova => {
             Ok(Instruction::Mova(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "lb" => {
-            assert_eq!(arity, 3);
-            Ok(Instruction::Lb(try!(parse_register(args[0])),
+        Opcode::Lt => {
+            Ok(Instruction::Lt(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "lh" => {
-            assert_eq!(arity, 3);
+        Opcode::Lh => {
             Ok(Instruction::Lh(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "lw" => {
-            assert_eq!(arity, 3);
+        Opcode::Lw => {
             Ok(Instruction::Lw(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "sb" => {
-            assert_eq!(arity, 3);
-            Ok(Instruction::Sb(try!(parse_register(args[0])),
+        Opcode::St => {
+            Ok(Instruction::St(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "sh" => {
-            assert_eq!(arity, 3);
+        Opcode::Sh => {
             Ok(Instruction::Sh(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "sw" => {
-            assert_eq!(arity, 3);
+        Opcode::Sw => {
             Ok(Instruction::Sw(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_tryte(args[2]))))
         }
 
-        "add" => {
-            assert_eq!(arity, 3);
+        Opcode::Add => {
             Ok(Instruction::Add(try!(parse_register(args[0])),
                                 try!(parse_register(args[1])),
                                 try!(parse_register(args[2]))))
         }
 
-        "addi" => {
-            assert_eq!(arity, 2);
+        Opcode::Addi => {
             Ok(Instruction::Addi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "mul" => {
-            assert_eq!(arity, 2);
+        Opcode::Mul => {
             Ok(Instruction::Mul(try!(parse_register(args[0])), try!(parse_register(args[1]))))
         }
 
-        "muli" => {
-            assert_eq!(arity, 2);
+        Opcode::Muli => {
             Ok(Instruction::Muli(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "not" => {
-            assert_eq!(arity, 2);
+        Opcode::Not => {
             Ok(Instruction::Not(try!(parse_register(args[0])), try!(parse_register(args[1]))))
         }
 
-        "and" => {
-            assert_eq!(arity, 3);
+        Opcode::And => {
             Ok(Instruction::And(try!(parse_register(args[0])),
                                 try!(parse_register(args[1])),
                                 try!(parse_register(args[2]))))
         }
 
-        "andi" => {
-            assert_eq!(arity, 2);
+        Opcode::Andi => {
             Ok(Instruction::Andi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "or" => {
-            assert_eq!(arity, 3);
+        Opcode::Or => {
             Ok(Instruction::Or(try!(parse_register(args[0])),
                                try!(parse_register(args[1])),
                                try!(parse_register(args[2]))))
         }
 
-        "ori" => {
-            assert_eq!(arity, 2);
+        Opcode::Ori => {
             Ok(Instruction::Ori(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "shf" => {
-            assert_eq!(arity, 3);
+        Opcode::Shf => {
             Ok(Instruction::Shf(try!(parse_register(args[0])),
                                 try!(parse_register(args[1])),
                                 try!(parse_register(args[2]))))
         }
 
-        "shfi" => {
-            assert_eq!(arity, 2);
+        Opcode::Shfi => {
             Ok(Instruction::Shfi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
         }
 
-        "cmp" => {
-            assert_eq!(arity, 3);
+        Opcode::Cmp => {
             Ok(Instruction::Cmp(try!(parse_register(args[0])),
                                 try!(parse_register(args[1])),
                                 try!(parse_register(args[2]))))
         }
 
-        "jmp" => {
-            assert_eq!(arity, 1);
-            Ok(Instruction::Jmp(try!(parse_label(args[0]))))
-        }
+        Opcode::Jmp => Ok(Instruction::Jmp(try!(parse_label(args[0])))),
 
-        "jT" => {
-            assert_eq!(arity, 2);
+        Opcode::JT => {
             Ok(Instruction::JT(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "j0" => {
-            assert_eq!(arity, 2);
+        Opcode::J0 => {
             Ok(Instruction::J0(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "j1" => {
-            assert_eq!(arity, 2);
+        Opcode::J1 => {
             Ok(Instruction::J1(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "jT0" => {
-            assert_eq!(arity, 2);
+        Opcode::JT0 => {
             Ok(Instruction::JT0(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "jT1" => {
-            assert_eq!(arity, 2);
+        Opcode::JT1 => {
             Ok(Instruction::JT1(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "j01" => {
-            assert_eq!(arity, 2);
+        Opcode::J01 => {
             Ok(Instruction::J01(try!(parse_register(args[0])), try!(parse_label(args[1]))))
         }
 
-        "call" => {
-            assert_eq!(arity, 1);
-            Ok(Instruction::Call(try!(parse_label(args[0]))))
-        }
+        Opcode::Call => Ok(Instruction::Call(try!(parse_label(args[0])))),
 
-        "ret" => {
-            assert_eq!(arity, 0);
-            Ok(Instruction::Ret)
-        }
+        Opcode::Ret => Ok(Instruction::Ret),
 
-        "syscall" => {
-            assert_eq!(arity, 0);
-            Ok(Instruction::Syscall)
-        }
+        Opcode::Syscall => Ok(Instruction::Syscall),
 
-        "break" => {
-            assert_eq!(arity, 0);
-            Ok(Instruction::Break)
-        }
+        Opcode::Break => Ok(Instruction::Break),
 
-        "halt" => {
-            assert_eq!(arity, 0);
-            Ok(Instruction::Halt)
-        }
-
-        _ => Err(ParseError::InvalidOpcode(opcode_name.to_string())),
+        Opcode::Halt => Ok(Instruction::Halt),
     }
 }

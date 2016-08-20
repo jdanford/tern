@@ -8,11 +8,11 @@ pub enum Opcode {
     Movw = 2, // movw REG ... WORD
     Mova = 3, // mova REG ... ADDR
 
-    Lb = 4, // lb REG, REG, OFF
+    Lt = 4, // lt REG, REG, OFF
     Lh = 5, // lh REG, REG, OFF
     Lw = 6, // lw REG, REG, OFF
 
-    Sb = 7, // sb REG, REG, OFF
+    St = 7, // st REG, REG, OFF
     Sh = 8, // sh REG, REG, OFF
     Sw = 9, // sw REG, REG, OFF
 
@@ -57,10 +57,10 @@ impl Opcode {
             "movi" => true,
             "movw" => true,
             "mova" => true,
-            "lb" => true,
+            "lt" => true,
             "lh" => true,
             "lw" => true,
-            "sb" => true,
+            "st" => true,
             "sh" => true,
             "sw" => true,
             "add" => true,
@@ -91,16 +91,16 @@ impl Opcode {
         }
     }
 
-    pub fn name(self) -> &'static str {
-        match self {
+    pub fn name(&self) -> &'static str {
+        match *self {
             Opcode::Mov => "mov",
             Opcode::Movi => "movi",
             Opcode::Movw => "movw",
             Opcode::Mova => "mova",
-            Opcode::Lb => "lb",
+            Opcode::Lt => "lt",
             Opcode::Lh => "lh",
             Opcode::Lw => "lw",
-            Opcode::Sb => "sb",
+            Opcode::St => "st",
             Opcode::Sh => "sh",
             Opcode::Sw => "sw",
             Opcode::Add => "add",
@@ -129,6 +129,45 @@ impl Opcode {
             Opcode::Halt => "halt",
         }
     }
+
+    pub fn arity(&self) -> usize {
+        match *self {
+            Opcode::Mov => 2,
+            Opcode::Movi => 2,
+            Opcode::Movw => 2,
+            Opcode::Mova => 2,
+            Opcode::Lt => 3,
+            Opcode::Lh => 3,
+            Opcode::Lw => 3,
+            Opcode::St => 3,
+            Opcode::Sh => 3,
+            Opcode::Sw => 3,
+            Opcode::Add => 3,
+            Opcode::Addi => 2,
+            Opcode::Mul => 2,
+            Opcode::Muli => 2,
+            Opcode::Not => 2,
+            Opcode::And => 3,
+            Opcode::Andi => 2,
+            Opcode::Or => 3,
+            Opcode::Ori => 2,
+            Opcode::Shf => 3,
+            Opcode::Shfi => 2,
+            Opcode::Cmp => 3,
+            Opcode::Jmp => 1,
+            Opcode::JT => 2,
+            Opcode::J0 => 2,
+            Opcode::J1 => 2,
+            Opcode::JT0 => 2,
+            Opcode::JT1 => 2,
+            Opcode::J01 => 2,
+            Opcode::Call => 1,
+            Opcode::Ret => 0,
+            Opcode::Syscall => 0,
+            Opcode::Break => 0,
+            Opcode::Halt => 0,
+        }
+    }
 }
 
 impl From<isize> for Opcode {
@@ -148,10 +187,10 @@ impl<'a> From<&'a str> for Opcode {
             "movi" => Opcode::Movi,
             "movw" => Opcode::Movw,
             "mova" => Opcode::Mova,
-            "lb" => Opcode::Lb,
+            "lt" => Opcode::Lt,
             "lh" => Opcode::Lh,
             "lw" => Opcode::Lw,
-            "sb" => Opcode::Sb,
+            "st" => Opcode::St,
             "sh" => Opcode::Sh,
             "sw" => Opcode::Sw,
             "add" => Opcode::Add,

@@ -1,46 +1,88 @@
 .include syscalls.tasm
 
 .data
-message:
-    %string "Here's a random seed:\n"
+str_heading:
+    %string "hashes are cool 👍"
 
-line:
+str_input:
+    %string "abcd"
+
+str_hash:
+    %string "hash:\t"
+
+str_tryte:
+    %string "tryte:\t"
+
+str_hash_prime:
+    %string "hash':\t"
+
+str_line:
     %string "------------------------\n"
 
-newline:
+str_newline:
     %string "\n"
 
 .code
 __start:
-    mova $a0, message
+    mova $a0, str_heading
+    call printString
+
+    mova $a0, str_newline
     call printString
 
     call getRand
-    call printTernary
-    mov $s2, $a0
 
-    mova $a0, newline
-    call printString
+    ; hash
+    mov $s3, $a0
+    ; movi $s3, 0
 
+    ; base address
+    mova $s2, str_input
+
+    ; index
     movi $s0, 0
-    movi $s1, 10
+
+    ; length
+    lw $s1, $s2, 0
 
 loop:
     cmp $t0, $s0, $s1
     j01 $t0, end
 
-    mova $a0, line
+    mova $a0, str_line
     call printString
 
-    mov $a0, $s0
-    call printTernary
-    mova $a0, newline
+    mova $a0, str_hash
     call printString
 
-    mul $s0, $s2
-    or $a0, $lo, $hi
+    mov $a0, $s3
     call printTernary
-    mova $a0, newline
+    mova $a0, str_newline
+    call printString
+
+    mova $a0, str_tryte
+    call printString
+
+    muli $s0, 6
+    add $t0, $s2, $lo
+    addi $t0, 24
+    lt $a1, $t0, 0
+
+    mov $a0, $a1
+    call printTernary
+    mova $a0, str_newline
+    call printString
+
+    muli $s3, 263
+    or $s3, $lo, $hi
+    add $s3, $s3, $a1
+
+    mova $a0, str_hash_prime
+    call printString
+
+    mov $a0, $s3
+    call printTernary
+    mova $a0, str_newline
     call printString
 
     addi $s0, 1

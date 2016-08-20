@@ -112,6 +112,18 @@ impl VM {
                 self.op_mova(Register::from(t1), addr);
             }
 
+            Opcode::Lt => {
+                self.op_load(Register::from(t1), Register::from(t2), t3, TRYTE_ISIZE);
+            }
+
+            Opcode::Lh => {
+                self.op_load(Register::from(t1), Register::from(t2), t3, HALF_ISIZE);
+            }
+
+            Opcode::Lw => {
+                self.op_load(Register::from(t1), Register::from(t2), t3, WORD_ISIZE);
+            }
+
             Opcode::Add => {
                 self.op_add(Register::from(t1), Register::from(t2), Register::from(t3));
             }
@@ -123,6 +135,11 @@ impl VM {
 
             Opcode::Mul => {
                 self.op_mul(Register::from(t1), Register::from(t2));
+            }
+
+            Opcode::Muli => {
+                let half = inst_half(inst);
+                self.op_muli(Register::from(t1), half);
             }
 
             Opcode::Not => {
@@ -230,23 +247,34 @@ impl VM {
         ternary::from_int(dest, addr as isize, WORD_ISIZE);
     }
 
+    unsafe fn op_load(&mut self, r_dest: Register, r_src: Register, offset: isize, len: isize) {
+        let dest = self.dest(r_dest);
+
+        let addr_src = self.src(r_src);
+        let base_addr = ternary::to_int(addr_src, len);
+        let addr = base_addr + offset;
+        let src = self.memory.offset(addr);
+
+        ternary::clear(dest, WORD_ISIZE);
+        ternary::copy(dest, src, len);
+    }
+
     unsafe fn op_add(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
         let dest = self.dest(r_dest);
         let lhs = self.src(r_lhs);
         let rhs = self.src(r_rhs);
 
-        ternary::clear(dest, WORD_ISIZE);
         self.add(dest, lhs, rhs, WORD_ISIZE);
     }
 
-    unsafe fn op_addi(&mut self, r_dest: Register, half: Half) {
-        let dest = self.dest(r_dest);
-        let lhs = self.src(r_dest);
+    unsafe fn op_addi(&mut self, r: Register, half: Half) {
+        let dest = self.dest(r);
+        let lhs = self.src(r);
 
         let mut word = EMPTY_WORD;
         let rhs = mut_ptr!(word);
-
         ternary::copy(rhs, ptr!(half), HALF_ISIZE);
+
         self.add(dest, lhs, rhs, WORD_ISIZE);
     }
 
@@ -259,10 +287,23 @@ impl VM {
     unsafe fn op_mul(&mut self, r_lhs: Register, r_rhs: Register) {
         let lhs = self.src(r_lhs);
         let rhs = self.src(r_rhs);
+        self.multiply(lhs, rhs, WORD_ISIZE);
+    }
 
+    unsafe fn op_muli(&mut self, r: Register, half: Half) {
+        let lhs = self.src(r);
+
+        let mut word = EMPTY_WORD;
+        let rhs = mut_ptr!(word);
+        ternary::copy(rhs, ptr!(half), HALF_ISIZE);
+
+        self.multiply(lhs, rhs, WORD_ISIZE);
+    }
+
+    unsafe fn multiply(&mut self, lhs: *const Trit, rhs: *const Trit, len: isize) {
         self.clear(Register::LO);
         self.clear(Register::HI);
-        ternary::multiply(self.dest(Register::LO), lhs, rhs, WORD_ISIZE);
+        ternary::multiply(self.dest(Register::LO), lhs, rhs, len);
     }
 
     unsafe fn op_not(&mut self, r_dest: Register, r_src: Register) {

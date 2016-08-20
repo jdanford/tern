@@ -191,8 +191,8 @@ impl EncodedProgram {
                 try!(self.encode_label(tryte_offset!(memory, 4), label));
             }
 
-            Instruction::Lb(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Lb));
+            Instruction::Lt(r1, r2, offset) => {
+                try!(self.encode_opcode(memory, Opcode::Lt));
                 try!(self.encode_register(tryte_offset!(memory, 1), r1));
                 try!(self.encode_register(tryte_offset!(memory, 2), r2));
                 try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
@@ -212,8 +212,8 @@ impl EncodedProgram {
                 try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
             }
 
-            Instruction::Sb(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Sb));
+            Instruction::St(r1, r2, offset) => {
+                try!(self.encode_opcode(memory, Opcode::St));
                 try!(self.encode_register(tryte_offset!(memory, 1), r1));
                 try!(self.encode_register(tryte_offset!(memory, 2), r2));
                 try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
