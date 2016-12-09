@@ -26,7 +26,7 @@ impl Trit {
 
 impl Default for Trit {
     fn default() -> Self {
-        Trit::Zero
+        Zero
     }
 }
 
