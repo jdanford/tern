@@ -1,5 +1,3 @@
-.include syscalls.tasm
-
 .data
 str_heading:
     %string "hashes are cool 👍"
@@ -23,6 +21,21 @@ str_newline:
     %string "\n"
 
 .code
+printString:
+    movi $t0, 0 ; PrintString
+    syscall
+    ret
+
+printTernary:
+    movi $t0, 2 ; PrintTernary
+    syscall
+    ret
+
+getRand:
+    movi $t0, 3 ; GetRand
+    syscall
+    ret
+
 __start:
     mova $a0, str_heading
     call printString

@@ -1,5 +1,3 @@
-.include syscalls.tasm
-
 .data
 str_newline:
     %string "\n"
@@ -10,6 +8,16 @@ stack_start:
 stack_end:
 
 .code
+printString:
+    movi $t0, 0 ; PrintString
+    syscall
+    ret
+
+printTernary:
+    movi $t0, 2 ; PrintTernary
+    syscall
+    ret
+
 __start:
     mova $sp, stack_start
 
