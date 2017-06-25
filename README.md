@@ -5,7 +5,7 @@ This is a poorly implemented VM with a MIPS-style architecture based on [balance
 - Use as little unsafe code as possible
 - Address trytes instead of trits
 - Operate on trytes as 16-bit integers instead of individual trits as bytes
-- Encode every instruction as a single tryte
+- Encode every instruction as a single word
 - Match the classic MIPS instruction set more closely
 - Add a `div` instruction for integer division and modulus
 - Use a real parser for the assembler instead of a pile of regexes
