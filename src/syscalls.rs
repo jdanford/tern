@@ -23,8 +23,8 @@ impl Syscall {
         match self {
             Syscall::PrintString => {
                 let addr = vm.read(Register::A0);
-                let local_memory = vm.memory.offset(addr);
-                let (s, _) = text::decode_str(local_memory);
+                let local_memory = &vm.memory[addr as usize..];
+                let (s, _) = text::decode_str(local_memory.as_ptr());
                 print!("{}", s);
             }
 

@@ -1,6 +1,3 @@
-use libc::{malloc, free};
-use std::mem::transmute;
-
 use ternary;
 use types::*;
 use opcodes::Opcode;
@@ -11,26 +8,16 @@ pub const PROGRAM_MAGIC_NUMBER: isize = 47330224520; // 1TTTTT1TTTTT1TTTTT1TTTTT
 
 pub struct VM {
     pub registers: [Word; REGISTER_COUNT],
-    pub memory: *mut Trit,
-    pub memory_size: usize,
+    pub memory: Vec<Trit>,
     pub pc: Addr,
     pub running: bool,
 }
 
 impl VM {
     pub fn new(memory_size: usize) -> VM {
-        let registers = [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT];
-        let memory = unsafe {
-            let ptr = malloc(memory_size);
-            transmute(ptr)
-        };
-
-        unsafe { ternary::clear(memory, memory_size as isize) };
-
         VM {
-            registers: registers,
-            memory: memory,
-            memory_size: memory_size,
+            registers: [[Trit::Zero; WORD_SIZE]; REGISTER_COUNT],
+            memory: vec![Trit::Zero; memory_size],
             pc: 0,
             running: false,
         }
@@ -59,11 +46,11 @@ impl VM {
     }
 
     pub fn init(&mut self) {
-        let magic_number = unsafe { ternary::to_int(self.memory, WORD_ISIZE) };
+        let magic_number = unsafe { ternary::to_int(self.memory.as_ptr(), WORD_ISIZE) };
         assert_eq!(magic_number, PROGRAM_MAGIC_NUMBER);
 
         let pc_start =
-            unsafe { ternary::to_int(self.memory.offset(WORD_ISIZE), WORD_ISIZE) } as Addr;
+            unsafe { ternary::to_int(self.memory[WORD_SIZE..].as_ptr(), WORD_ISIZE) } as Addr;
         self.pc = pc_start;
 
         self.running = true;
@@ -79,7 +66,7 @@ impl VM {
 
     unsafe fn next_inst(&mut self) -> Word {
         let mut inst = [Trit::Zero; WORD_SIZE];
-        let location = self.memory.offset(self.pc as isize);
+        let location = self.memory[self.pc..].as_ptr();
         ternary::copy(mut_ptr!(inst), location, WORD_ISIZE);
 
         self.pc += WORD_SIZE;
@@ -264,7 +251,7 @@ impl VM {
 
         let addr_src = self.src(r_addr);
         let addr = ternary::to_int(addr_src, len);
-        let src = self.memory.offset(addr + offset);
+        let src = self.memory[(addr + offset) as usize..].as_ptr();
 
         ternary::clear(dest, WORD_ISIZE);
         ternary::copy(dest, src, len);
@@ -275,7 +262,7 @@ impl VM {
 
         let addr_src = self.src(r_addr);
         let addr = ternary::to_int(addr_src, len);
-        let dest = self.memory.offset(addr + offset);
+        let dest = self.memory[(addr + offset) as usize..].as_mut_ptr();
 
         ternary::copy(dest, src, len);
     }
@@ -448,10 +435,4 @@ fn inst_reladdr(inst: Word) -> RelAddr {
 
 fn inst_addr(inst: Word) -> Addr {
     unsafe { ternary::to_int(ptr!(inst), WORD_ISIZE) as Addr }
-}
-
-impl Drop for VM {
-    fn drop(&mut self) {
-        unsafe { free(transmute(self.memory)) };
-    }
 }
