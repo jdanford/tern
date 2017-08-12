@@ -74,15 +74,15 @@ impl DecodedProgram {
     }
 
     pub fn read_file<'a>(&mut self, path: &'a str) -> Result<(), ParseError> {
-        let file = try!(File::open(path).map_err(ParseError::IOError));
+        let file = File::open(path).map_err(ParseError::IOError)?;
         self.read(file)
     }
 
     pub fn read<R: Read>(&mut self, reader: R) -> Result<(), ParseError> {
         let buffer = io::BufReader::new(reader);
         for line_result in buffer.lines() {
-            let raw_line = try!(line_result.map_err(ParseError::IOError));
-            try!(self.read_line(&raw_line[..]));
+            let raw_line = line_result.map_err(ParseError::IOError)?;
+            self.read_line(&raw_line[..])?;
         }
 
         Ok(())
@@ -90,7 +90,7 @@ impl DecodedProgram {
 
     pub fn read_str(&mut self, s: &str) -> Result<(), ParseError> {
         for raw_line in s.lines() {
-            try!(self.read_line(raw_line));
+            self.read_line(raw_line)?;
         }
 
         Ok(())
@@ -108,7 +108,7 @@ impl DecodedProgram {
             ".include" => {
                 let paths = &tokens[1..];
                 for path in paths {
-                    try!(self.read_file(path));
+                    self.read_file(path)?;
                 }
             }
 
@@ -123,11 +123,11 @@ impl DecodedProgram {
             _ => {
                 match self.read_mode {
                     ReadMode::Data => {
-                        self.data.push(try!(parse_data_line(line)));
+                        self.data.push(parse_data_line(line)?);
                     }
 
                     ReadMode::Code => {
-                        self.code.push(try!(parse_code_line(line)));
+                        self.code.push(parse_code_line(line)?);
                     }
                 }
             }

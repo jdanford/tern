@@ -26,24 +26,24 @@ pub fn random_word<R: Rng>(trits: *mut Trit, rng: &mut R, len: isize) {
 
 pub fn vm_from_code(code: &str) -> Result<VM, String> {
     let mut program = DecodedProgram::new();
-    try!(program.read_str(code).map_err(|e| format!("{:?}", e)));
+    program.read_str(code).map_err(|e| format!("{:?}", e))?;
 
     let vm = VM::new(program.size());
 
     let mut encoder = EncodedProgram::new(vm.memory, vm.memory_size);
-    try!(encoder.encode(program).map_err(|e| format!("{:?}", e)));
+    encoder.encode(program).map_err(|e| format!("{:?}", e))?;
 
     Ok(vm)
 }
 
 pub fn vm_from_reader<R: Read>(reader: R) -> Result<VM, String> {
     let mut program = DecodedProgram::new();
-    try!(program.read(reader).map_err(|e| format!("{:?}", e)));
+    program.read(reader).map_err(|e| format!("{:?}", e))?;
 
     let vm = VM::new(program.size());
 
     let mut encoder = EncodedProgram::new(vm.memory, vm.memory_size);
-    try!(encoder.encode(program).map_err(|e| format!("{:?}", e)));
+    encoder.encode(program).map_err(|e| format!("{:?}", e))?;
 
     Ok(vm)
 }

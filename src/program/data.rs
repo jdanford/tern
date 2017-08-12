@@ -52,7 +52,7 @@ impl StaticData {
                 WORD_SIZE
             }
 
-            StaticData::String(ref s) => text::encode_str(memory, &s[..]) * TRYTE_SIZE + WORD_SIZE,
+            StaticData::String(ref s) => text::encode_str(memory, s) * TRYTE_SIZE + WORD_SIZE,
 
             StaticData::Array(ref data, count) => {
                 for _ in 0..count {
