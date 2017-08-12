@@ -22,6 +22,20 @@ impl Trit {
             Ordering::Greater => Pos,
         }
     }
+    
+    pub fn sum_with_carry(self, rhs: Trit, carry_in: Trit) -> (Trit, Trit) {
+        let isum = (self as i8) + (rhs as i8) + (carry_in as i8);
+        match isum {
+            -3 => (Zero, Neg),
+            -2 => (Pos, Neg),
+            -1 => (Neg, Zero),
+            1 => (Pos, Zero),
+            2 => (Neg, Pos),
+            3 => (Zero, Pos),
+            0 => (Zero, Zero),
+            _ => unimplemented!()
+        }
+    }
 }
 
 impl Default for Trit {
@@ -35,7 +49,8 @@ impl From<i8> for Trit {
         match n {
             1 => Pos,
             -1 => Neg,
-            _ => Zero,
+            0 => Zero,
+            _ => unimplemented!()
         }
     }
 }
@@ -55,7 +70,8 @@ impl From<u8> for Trit {
         match b {
             b'T' => Neg,
             b'1' => Pos,
-            _ => Zero,
+            b'0' => Zero,
+            _ => unimplemented!()
         }
     }
 }
@@ -75,7 +91,8 @@ impl From<char> for Trit {
         match c {
             'T' => Neg,
             '1' => Pos,
-            _ => Zero,
+            '0' => Zero,
+            _ => unimplemented!()
         }
     }
 }
@@ -110,8 +127,7 @@ impl ops::BitAnd for Trit {
     fn bitand(self, rhs: Trit) -> Self::Output {
         match (self, rhs) {
             (Pos, Pos) => Pos,
-            (_, Zero) => Zero,
-            (Zero, _) => Zero,
+            (_, Zero) | (Zero, _) => Zero,
             _ => Neg,
         }
     }
@@ -123,32 +139,15 @@ impl ops::BitOr for Trit {
     fn bitor(self, rhs: Trit) -> Self::Output {
         match (self, rhs) {
             (Neg, Neg) => Neg,
-            (a, Zero) => a,
-            (Zero, b) => b,
+            (a, Zero) | (Zero, a) => a,
             _ => Pos,
-        }
-    }
-}
-
-impl Trit {
-    pub fn sum_with_carry(self, rhs: Trit, carry_in: Trit) -> (Trit, Trit) {
-        let isum = (self as i8) + (rhs as i8) + (carry_in as i8);
-        match isum {
-            -3 => (Zero, Neg),
-            -2 => (Pos, Neg),
-            -1 => (Neg, Zero),
-            1 => (Pos, Zero),
-            2 => (Neg, Pos),
-            3 => (Zero, Pos),
-            _ => (Zero, Zero),
         }
     }
 }
 
 impl fmt::Debug for Trit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let _ = f.write_char(char::from(*self));
-        Ok(())
+        f.write_char(char::from(*self))
     }
 }
 

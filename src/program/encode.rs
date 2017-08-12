@@ -10,7 +10,7 @@ use program::parser::{CodeDecl, DataDecl};
 use util::next_aligned_addr;
 use vm::PROGRAM_MAGIC_NUMBER;
 
-static START_LABEL: &'static str = "__start";
+static START_LABEL: &str = "__start";
 
 #[derive(Debug)]
 pub enum EncodeError {
@@ -75,16 +75,16 @@ impl EncodedProgram {
         let pc_start_offset = self.pc;
         self.pc += WORD_SIZE;
 
-        let _ = try!(self.encode_data_section(&program.data[..]));
+        let _ = self.encode_data_section(&program.data[..])?;
 
         self.pc = next_aligned_addr(self.pc, WORD_SIZE);
 
-        let _ = try!(self.encode_code_section(&program.code[..]));
+        let _ = self.encode_code_section(&program.code[..])?;
 
-        let pc_start = try!(self.labels
+        let pc_start = self.labels
             .get(START_LABEL)
             .cloned()
-            .ok_or_else(|| EncodeError::MissingRequiredLabel(START_LABEL.to_string())));
+            .ok_or_else(|| EncodeError::MissingRequiredLabel(START_LABEL.to_string()))?;
 
         unsafe {
             let local_memory = self.memory.offset(pc_start_offset as isize);
@@ -97,8 +97,8 @@ impl EncodedProgram {
     }
 
     fn patch_addrs(&mut self) {
-        for (&ptr, ref patch) in self.patches.iter() {
-            let addr = match **patch {
+        for (&ptr, patch) in &self.patches {
+            let addr = match *patch {
                 Patch::Absolute(ref label) => self.label_addr(label).unwrap() as isize,
                 Patch::Relative(pc, ref label) => self.relative_addr(pc, label).unwrap(),
             };
@@ -110,8 +110,8 @@ impl EncodedProgram {
     pub fn encode_data_section(&mut self, all_data: &[DataDecl]) -> EncodeResult<usize> {
         let mut total_size = 0;
 
-        for ref data_decl in all_data {
-            match **data_decl {
+        for data_decl in all_data {
+            match *data_decl {
                 DataDecl::Label(ref label) => {
                     self.insert_label(label);
                 }
@@ -136,8 +136,8 @@ impl EncodedProgram {
     pub fn encode_code_section(&mut self, all_code: &[CodeDecl]) -> EncodeResult<usize> {
         let mut total_size = 0;
 
-        for ref code_decl in all_code {
-            match **code_decl {
+        for code_decl in all_code {
+            match *code_decl {
                 CodeDecl::Label(ref label) => {
                     self.insert_label(label);
                 }
@@ -147,7 +147,7 @@ impl EncodedProgram {
 
                     unsafe {
                         let local_memory = self.memory.offset(self.pc as isize);
-                        try!(self.encode_instruction(local_memory, instruction));
+                        self.encode_instruction(local_memory, instruction)?;
                     }
 
                     let size = instruction.size();
@@ -168,208 +168,208 @@ impl EncodedProgram {
 
         match *instruction {
             Instruction::Mov(r1, r2) => {
-                try!(self.encode_opcode(memory, Opcode::Mov));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
+                self.encode_opcode(memory, Opcode::Mov)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
             }
 
             Instruction::Movi(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Movi));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Movi)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Movw(r, word) => {
-                try!(self.encode_opcode(memory, Opcode::Movw));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_word(tryte_offset!(memory, 4), word));
+                self.encode_opcode(memory, Opcode::Movw)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_word(tryte_offset!(memory, 4), word)?;
             }
 
             Instruction::Mova(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::Mova));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_label(tryte_offset!(memory, 4), label));
+                self.encode_opcode(memory, Opcode::Mova)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_label(tryte_offset!(memory, 4), label)?;
             }
 
             Instruction::Lt(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Lt));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::Lt)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::Lh(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Lh));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::Lh)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::Lw(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Lw));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::Lw)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::St(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::St));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::St)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::Sh(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Sh));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::Sh)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::Sw(r1, r2, offset) => {
-                try!(self.encode_opcode(memory, Opcode::Sw));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_tryte(tryte_offset!(memory, 3), offset));
+                self.encode_opcode(memory, Opcode::Sw)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_tryte(tryte_offset!(memory, 3), offset)?;
             }
 
             Instruction::Add(r1, r2, r3) => {
-                try!(self.encode_opcode(memory, Opcode::Add));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_register(tryte_offset!(memory, 3), r3));
+                self.encode_opcode(memory, Opcode::Add)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_register(tryte_offset!(memory, 3), r3)?;
             }
 
             Instruction::Addi(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Addi));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Addi)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Mul(r1, r2) => {
-                try!(self.encode_opcode(memory, Opcode::Mul));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
+                self.encode_opcode(memory, Opcode::Mul)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
             }
 
             Instruction::Muli(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Muli));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Muli)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Not(r1, r2) => {
-                try!(self.encode_opcode(memory, Opcode::Not));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
+                self.encode_opcode(memory, Opcode::Not)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
             }
 
             Instruction::And(r1, r2, r3) => {
-                try!(self.encode_opcode(memory, Opcode::And));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_register(tryte_offset!(memory, 3), r3));
+                self.encode_opcode(memory, Opcode::And)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_register(tryte_offset!(memory, 3), r3)?;
             }
 
             Instruction::Andi(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Andi));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Andi)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Or(r1, r2, r3) => {
-                try!(self.encode_opcode(memory, Opcode::Or));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_register(tryte_offset!(memory, 3), r3));
+                self.encode_opcode(memory, Opcode::Or)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_register(tryte_offset!(memory, 3), r3)?;
             }
 
             Instruction::Ori(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Ori));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Ori)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Shf(r1, r2, r3) => {
-                try!(self.encode_opcode(memory, Opcode::Shf));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_register(tryte_offset!(memory, 3), r3));
+                self.encode_opcode(memory, Opcode::Shf)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_register(tryte_offset!(memory, 3), r3)?;
             }
 
             Instruction::Shfi(r, half) => {
-                try!(self.encode_opcode(memory, Opcode::Shfi));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_half(tryte_offset!(memory, 2), half));
+                self.encode_opcode(memory, Opcode::Shfi)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_half(tryte_offset!(memory, 2), half)?;
             }
 
             Instruction::Cmp(r1, r2, r3) => {
-                try!(self.encode_opcode(memory, Opcode::Cmp));
-                try!(self.encode_register(tryte_offset!(memory, 1), r1));
-                try!(self.encode_register(tryte_offset!(memory, 2), r2));
-                try!(self.encode_register(tryte_offset!(memory, 3), r3));
+                self.encode_opcode(memory, Opcode::Cmp)?;
+                self.encode_register(tryte_offset!(memory, 1), r1)?;
+                self.encode_register(tryte_offset!(memory, 2), r2)?;
+                self.encode_register(tryte_offset!(memory, 3), r3)?;
             }
 
             Instruction::Jmp(ref label) => {
-                try!(self.encode_opcode(memory, Opcode::Jmp));
-                try!(self.encode_label(tryte_offset!(memory, 4), label));
+                self.encode_opcode(memory, Opcode::Jmp)?;
+                self.encode_label(tryte_offset!(memory, 4), label)?;
             }
 
             Instruction::JT(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::JT));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::JT)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::J0(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::J0));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::J0)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::J1(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::J1));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::J1)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::JT0(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::JT0));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::JT0)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::JT1(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::JT1));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::JT1)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::J01(r, ref label) => {
-                try!(self.encode_opcode(memory, Opcode::J01));
-                try!(self.encode_register(tryte_offset!(memory, 1), r));
-                try!(self.encode_relative_label(tryte_offset!(memory, 2), instruction, label));
+                self.encode_opcode(memory, Opcode::J01)?;
+                self.encode_register(tryte_offset!(memory, 1), r)?;
+                self.encode_relative_label(tryte_offset!(memory, 2), instruction, label)?;
             }
 
             Instruction::Call(ref label) => {
-                try!(self.encode_opcode(memory, Opcode::Call));
-                try!(self.encode_label(tryte_offset!(memory, 4), label));
+                self.encode_opcode(memory, Opcode::Call)?;
+                self.encode_label(tryte_offset!(memory, 4), label)?;
             }
 
             Instruction::Ret => {
-                try!(self.encode_opcode(memory, Opcode::Ret));
+                self.encode_opcode(memory, Opcode::Ret)?;
             }
 
             Instruction::Syscall => {
-                try!(self.encode_opcode(memory, Opcode::Syscall));
+                self.encode_opcode(memory, Opcode::Syscall)?;
             }
 
             Instruction::Break => {
-                try!(self.encode_opcode(memory, Opcode::Break));
+                self.encode_opcode(memory, Opcode::Break)?;
             }
 
             Instruction::Halt => {
-                try!(self.encode_opcode(memory, Opcode::Halt));
+                self.encode_opcode(memory, Opcode::Halt)?;
             }
         }
 
@@ -401,8 +401,8 @@ impl EncodedProgram {
         Ok(())
     }
 
-    unsafe fn encode_label(&mut self, memory: *mut Trit, label: &String) -> EncodeResult<()> {
-        self.patches.insert(memory, Patch::Absolute(label.clone()));
+    unsafe fn encode_label(&mut self, memory: *mut Trit, label: &str) -> EncodeResult<()> {
+        self.patches.insert(memory, Patch::Absolute(label.to_string()));
         Ok(())
     }
 
@@ -416,15 +416,15 @@ impl EncodedProgram {
         Ok(())
     }
 
-    pub fn label_addr(&self, label: &String) -> EncodeResult<Addr> {
+    pub fn label_addr(&self, label: &str) -> EncodeResult<Addr> {
         match self.labels.get(label) {
             Some(&addr) => Ok(addr),
-            _ => Err(EncodeError::InvalidLabel(label.clone())),
+            _ => Err(EncodeError::InvalidLabel(label.to_string())),
         }
     }
 
-    pub fn relative_addr(&self, pc: Addr, label: &String) -> EncodeResult<RelAddr> {
-        let addr = try!(self.label_addr(label));
+    pub fn relative_addr(&self, pc: Addr, label: &str) -> EncodeResult<RelAddr> {
+        let addr = self.label_addr(label)?;
         Ok(addr as RelAddr - pc as RelAddr)
     }
 }

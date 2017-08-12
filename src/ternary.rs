@@ -93,12 +93,13 @@ pub unsafe fn from_int(trits: *mut Trit, n: isize, len: isize) {
 
     for i in 0..len {
         let trit = match n % 3 {
-            1 => Trit::Pos,
             0 => Trit::Zero,
-            _ => {
+            1 => Trit::Pos,
+            2 => {
                 n += 1;
                 Trit::Neg
             }
+            _ => unreachable!()
         };
 
         *trits.offset(i) = if negative { -trit } else { trit };
@@ -188,7 +189,7 @@ pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
         }
     }
 
-    return Trit::Zero;
+    Trit::Zero
 }
 
 pub unsafe fn lowest_trit(trits: *const Trit, len: isize) -> Trit {
@@ -227,7 +228,7 @@ pub unsafe fn popcount(trits: *const Trit, len: isize) -> (isize, isize) {
                 hi_count += 1;
             }
 
-            _ => {}
+            Trit::Zero => {}
         }
     }
 

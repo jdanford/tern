@@ -10,11 +10,11 @@ use program::instructions::Instruction;
 use program::data::StaticData;
 
 mod patterns {
-    pub static COMMA: &'static str = r",\s*";
-    pub static TERNARY: &'static str = r"0t([10T]+)";
-    pub static LABEL: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*):";
-    pub static STATEMENT: &'static str = r"([_a-zA-Z][_a-zA-Z0-9]*)(\s+(.*))?";
-    pub static STRING: &'static str = r#"^\s*"(.+)"\s*$"#;
+    pub static COMMA: &str = r",\s*";
+    pub static TERNARY: &str = r"0t([10T]+)";
+    pub static LABEL: &str = r"([_a-zA-Z][_a-zA-Z0-9]*):";
+    pub static STATEMENT: &str = r"([_a-zA-Z][_a-zA-Z0-9]*)(\s+(.*))?";
+    pub static STRING: &str = r#"^\s*"(.+)"\s*$"#;
 }
 
 #[derive(Clone, Debug)]
@@ -69,7 +69,7 @@ pub enum ParseError {
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
-pub fn clean_line<'a>(raw_line: &'a str) -> &'a str {
+pub fn clean_line(raw_line: &str) -> &str {
     let line = raw_line.trim();
     let mut end = line.len();
     for (i, c) in line.chars().enumerate() {
@@ -119,8 +119,8 @@ fn get_capture<'a>(captures: &regex::Captures<'a>, i: usize) -> ParseResult<&'a 
 fn with_regex_captures<T, F>(pattern: &str, s: &str, mut f: F) -> ParseResult<T>
     where F: FnMut(&regex::Captures) -> ParseResult<T>
 {
-    let re = try!(compile_regex(pattern));
-    let captures = try!(re.captures(s).ok_or(ParseError::RegexMatchFailure));
+    let re = compile_regex(pattern)?;
+    let captures = re.captures(s).ok_or(ParseError::RegexMatchFailure)?;
     f(&captures)
 }
 
@@ -137,17 +137,17 @@ pub fn parse_label_line(line: &str) -> ParseResult<String> {
 
 fn parse_data(line: &str) -> ParseResult<StaticData> {
     with_regex_captures(patterns::STATEMENT, line, |ref captures| {
-        let type_name = try!(get_capture(captures, 1));
-        let rest = try!(get_capture(captures, 3));
+        let type_name = get_capture(captures, 1)?;
+        let rest = get_capture(captures, 3)?;
         data_from_parts(type_name, rest)
     })
 }
 
 fn parse_instruction(line: &str) -> ParseResult<Instruction> {
     with_regex_captures(patterns::STATEMENT, line, |ref captures| {
-        let opcode_name = try!(get_capture(captures, 1));
+        let opcode_name = get_capture(captures, 1)?;
         let args = if let Some(args_str) = captures.at(3) {
-            let comma_re = try!(compile_regex(patterns::COMMA));
+            let comma_re = compile_regex(patterns::COMMA)?;
             comma_re.split(args_str).collect()
         } else {
             Vec::new()
@@ -231,8 +231,8 @@ fn parse_word(s: &str) -> ParseResult<Word> {
 
 fn parse_string(s: &str) -> ParseResult<String> {
     with_regex_captures(patterns::STRING, s, |ref captures| {
-        let string = try!(get_capture(captures, 1));
-        let unescaped_string = try!(unescape_string(string));
+        let string = get_capture(captures, 1)?;
+        let unescaped_string = unescape_string(string)?;
         Ok(unescaped_string)
     })
 }
@@ -243,7 +243,7 @@ fn unescape_string(s: &str) -> ParseResult<String> {
 
     while let Some(c) = chars.next() {
         let unescaped = if c == '\\' {
-            try!(unescape_chars(&mut chars))
+            unescape_chars(&mut chars)?
         } else {
             c
         };
@@ -261,8 +261,8 @@ fn unescape_chars<I>(chars: &mut I) -> ParseResult<char> where I: Iterator<Item 
 
             let mut code = 0;
             for c in seq.chars() {
-                let n = try!(c.to_digit(16)
-                    .ok_or_else(|| ParseError::InvalidEscapeSequence(seq.clone())));
+                let n = c.to_digit(16)
+                    .ok_or_else(|| ParseError::InvalidEscapeSequence(seq.clone()))?;
                 code = code * 16 + n;
             }
 
@@ -279,40 +279,40 @@ fn unescape_chars<I>(chars: &mut I) -> ParseResult<char> where I: Iterator<Item 
     }
 }
 
-fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> ParseResult<StaticData> {
+fn data_from_parts(type_name: &str, rest: &str) -> ParseResult<StaticData> {
     match type_name {
         "tryte" => {
-            let tryte = try!(parse_tryte(rest));
+            let tryte = parse_tryte(rest)?;
             let i = unsafe { ternary::to_int(ptr!(tryte), TRYTE_ISIZE) };
             Ok(StaticData::Tryte(i))
         }
 
         "half" => {
-            let half = try!(parse_half(rest));
+            let half = parse_half(rest)?;
             let i = unsafe { ternary::to_int(ptr!(half), HALF_ISIZE) };
             Ok(StaticData::Half(i))
         }
 
         "word" => {
-            let word = try!(parse_word(rest));
+            let word = parse_word(rest)?;
             let i = unsafe { ternary::to_int(ptr!(word), WORD_ISIZE) };
             Ok(StaticData::Word(i))
         }
 
         "string" => {
-            let string = try!(parse_string(rest));
+            let string = parse_string(rest)?;
             Ok(StaticData::String(string))
         }
 
         "array" => {
             let mut parts = rest.split(" x ").map(|s| s.trim());
-            let data_str = try!(parts.next()
-                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string())));
-            let count_str = try!(parts.next()
-                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string())));
+            let data_str = parts.next()
+                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string()))?;
+            let count_str = parts.next()
+                .ok_or_else(|| ParseError::InvalidDataSpec(rest.to_string()))?;
 
-            if let DataDecl::Data(data) = try!(parse_data_line(data_str)) {
-                let count = try!(parse_decimal(count_str));
+            if let DataDecl::Data(data) = parse_data_line(data_str)? {
+                let count = parse_decimal(count_str)?;
                 assert!(count > 0);
                 Ok(StaticData::Array(Box::new(data), count as usize))
             } else {
@@ -324,7 +324,7 @@ fn data_from_parts<'a>(type_name: &'a str, rest: &'a str) -> ParseResult<StaticD
     }
 }
 
-fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> ParseResult<Instruction> {
+fn instruction_from_parts(opcode_name: &str, args: &[&str]) -> ParseResult<Instruction> {
     if !Opcode::name_is_valid(opcode_name) {
         return Err(ParseError::InvalidOpcode(opcode_name.to_string()));
     }
@@ -339,142 +339,142 @@ fn instruction_from_parts<'a>(opcode_name: &'a str, args: &[&'a str]) -> ParseRe
 
     match opcode {
         Opcode::Mov => {
-            Ok(Instruction::Mov(try!(parse_register(args[0])), try!(parse_register(args[1]))))
+            Ok(Instruction::Mov(parse_register(args[0])?, parse_register(args[1])?))
         }
 
         Opcode::Movi => {
-            Ok(Instruction::Movi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Movi(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Movw => {
-            Ok(Instruction::Movw(try!(parse_register(args[0])), try!(parse_word(args[1]))))
+            Ok(Instruction::Movw(parse_register(args[0])?, parse_word(args[1])?))
         }
 
         Opcode::Mova => {
-            Ok(Instruction::Mova(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::Mova(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::Lt => {
-            Ok(Instruction::Lt(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lt(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::Lh => {
-            Ok(Instruction::Lh(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lh(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::Lw => {
-            Ok(Instruction::Lw(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::Lw(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::St => {
-            Ok(Instruction::St(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::St(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::Sh => {
-            Ok(Instruction::Sh(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::Sh(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::Sw => {
-            Ok(Instruction::Sw(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_tryte(args[2]))))
+            Ok(Instruction::Sw(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_tryte(args[2])?))
         }
 
         Opcode::Add => {
-            Ok(Instruction::Add(try!(parse_register(args[0])),
-                                try!(parse_register(args[1])),
-                                try!(parse_register(args[2]))))
+            Ok(Instruction::Add(parse_register(args[0])?,
+                                parse_register(args[1])?,
+                                parse_register(args[2])?))
         }
 
         Opcode::Addi => {
-            Ok(Instruction::Addi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Addi(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Mul => {
-            Ok(Instruction::Mul(try!(parse_register(args[0])), try!(parse_register(args[1]))))
+            Ok(Instruction::Mul(parse_register(args[0])?, parse_register(args[1])?))
         }
 
         Opcode::Muli => {
-            Ok(Instruction::Muli(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Muli(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Not => {
-            Ok(Instruction::Not(try!(parse_register(args[0])), try!(parse_register(args[1]))))
+            Ok(Instruction::Not(parse_register(args[0])?, parse_register(args[1])?))
         }
 
         Opcode::And => {
-            Ok(Instruction::And(try!(parse_register(args[0])),
-                                try!(parse_register(args[1])),
-                                try!(parse_register(args[2]))))
+            Ok(Instruction::And(parse_register(args[0])?,
+                                parse_register(args[1])?,
+                                parse_register(args[2])?))
         }
 
         Opcode::Andi => {
-            Ok(Instruction::Andi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Andi(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Or => {
-            Ok(Instruction::Or(try!(parse_register(args[0])),
-                               try!(parse_register(args[1])),
-                               try!(parse_register(args[2]))))
+            Ok(Instruction::Or(parse_register(args[0])?,
+                               parse_register(args[1])?,
+                               parse_register(args[2])?))
         }
 
         Opcode::Ori => {
-            Ok(Instruction::Ori(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Ori(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Shf => {
-            Ok(Instruction::Shf(try!(parse_register(args[0])),
-                                try!(parse_register(args[1])),
-                                try!(parse_register(args[2]))))
+            Ok(Instruction::Shf(parse_register(args[0])?,
+                                parse_register(args[1])?,
+                                parse_register(args[2])?))
         }
 
         Opcode::Shfi => {
-            Ok(Instruction::Shfi(try!(parse_register(args[0])), try!(parse_half(args[1]))))
+            Ok(Instruction::Shfi(parse_register(args[0])?, parse_half(args[1])?))
         }
 
         Opcode::Cmp => {
-            Ok(Instruction::Cmp(try!(parse_register(args[0])),
-                                try!(parse_register(args[1])),
-                                try!(parse_register(args[2]))))
+            Ok(Instruction::Cmp(parse_register(args[0])?,
+                                parse_register(args[1])?,
+                                parse_register(args[2])?))
         }
 
-        Opcode::Jmp => Ok(Instruction::Jmp(try!(parse_label(args[0])))),
+        Opcode::Jmp => Ok(Instruction::Jmp(parse_label(args[0])?)),
 
         Opcode::JT => {
-            Ok(Instruction::JT(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::JT(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::J0 => {
-            Ok(Instruction::J0(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::J0(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::J1 => {
-            Ok(Instruction::J1(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::J1(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::JT0 => {
-            Ok(Instruction::JT0(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::JT0(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::JT1 => {
-            Ok(Instruction::JT1(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::JT1(parse_register(args[0])?, parse_label(args[1])?))
         }
 
         Opcode::J01 => {
-            Ok(Instruction::J01(try!(parse_register(args[0])), try!(parse_label(args[1]))))
+            Ok(Instruction::J01(parse_register(args[0])?, parse_label(args[1])?))
         }
 
-        Opcode::Call => Ok(Instruction::Call(try!(parse_label(args[0])))),
+        Opcode::Call => Ok(Instruction::Call(parse_label(args[0])?)),
 
         Opcode::Ret => Ok(Instruction::Ret),
 
