@@ -1,13 +1,13 @@
 .code
-start:
+__start:
     movi $a0, 0
     movi $a1, 10
 
 loop:
-    cmp $t0, $a0, $a1
-    j01 $t0, end
+    cmp $t1, $a0, $a1
+    j01 $t1, end
 
-    movi $s0, 2 ; PrintTernary
+    movi $t0, 2 ; PrintTernary
     syscall
 
     addi $a0, 1

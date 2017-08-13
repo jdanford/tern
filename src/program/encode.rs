@@ -35,9 +35,8 @@ impl Patch {
     }
 }
 
-pub struct EncodedProgram {
-    memory: *mut Trit,
-    memory_size: usize,
+pub struct EncodedProgram<'a> {
+    memory: &'a mut [Trit],
     labels: HashMap<String, Addr>,
     patches: HashMap<*mut Trit, Patch>,
     pc: Addr,
@@ -45,11 +44,10 @@ pub struct EncodedProgram {
 
 pub type EncodeResult<T> = Result<T, EncodeError>;
 
-impl EncodedProgram {
-    pub fn new(memory: *mut Trit, memory_size: usize) -> EncodedProgram {
+impl<'a> EncodedProgram<'a> {
+    pub fn new(memory: &mut [Trit]) -> EncodedProgram {
         EncodedProgram {
             memory: memory,
-            memory_size: memory_size,
             labels: HashMap::new(),
             patches: HashMap::new(),
             pc: 0,
@@ -64,11 +62,11 @@ impl EncodedProgram {
 
     pub fn encode(&mut self, program: DecodedProgram) -> EncodeResult<usize> {
         let required_size = program.size();
-        if required_size > self.memory_size {
-            return Err(EncodeError::InsufficientMemory(required_size, self.memory_size));
+        if required_size > self.memory.len() {
+            return Err(EncodeError::InsufficientMemory(required_size, self.memory.len()));
         }
 
-        unsafe { ternary::from_int(self.memory, PROGRAM_MAGIC_NUMBER, WORD_ISIZE) };
+        unsafe { ternary::from_int(self.memory.as_mut_ptr(), PROGRAM_MAGIC_NUMBER, WORD_ISIZE) };
         self.pc += WORD_SIZE;
 
         // save space for pc start
@@ -87,7 +85,7 @@ impl EncodedProgram {
             .ok_or_else(|| EncodeError::MissingRequiredLabel(START_LABEL.to_string()))?;
 
         unsafe {
-            let local_memory = self.memory.offset(pc_start_offset as isize);
+            let local_memory = self.memory.as_mut_ptr().offset(pc_start_offset as isize);
             ternary::from_int(local_memory, pc_start as isize, WORD_ISIZE);
         }
 
@@ -120,7 +118,7 @@ impl EncodedProgram {
                     self.pc = next_aligned_addr(self.pc, data.alignment());
 
                     let size = unsafe {
-                        let local_memory = self.memory.offset(self.pc as isize);
+                        let local_memory = self.memory.as_mut_ptr().offset(self.pc as isize);
                         data.write(local_memory)
                     };
 
@@ -146,7 +144,7 @@ impl EncodedProgram {
                     assert_eq!(self.pc % WORD_SIZE, 0);
 
                     unsafe {
-                        let local_memory = self.memory.offset(self.pc as isize);
+                        let local_memory = self.memory.as_mut_ptr().offset(self.pc as isize);
                         self.encode_instruction(local_memory, instruction)?;
                     }
 
@@ -388,6 +386,7 @@ impl EncodedProgram {
 
     unsafe fn encode_tryte(&self, memory: *mut Trit, tryte: Tryte) -> EncodeResult<()> {
         ternary::copy(memory, ptr!(tryte), TRYTE_ISIZE);
+        
         Ok(())
     }
 
@@ -409,10 +408,10 @@ impl EncodedProgram {
     unsafe fn encode_relative_label(&mut self,
                                     memory: *mut Trit,
                                     instruction: &Instruction,
-                                    label: &String)
+                                    label: &str)
                                     -> EncodeResult<()> {
         let pc = self.pc + instruction.size();
-        self.patches.insert(memory, Patch::Relative(pc, label.clone()));
+        self.patches.insert(memory, Patch::Relative(pc, label.to_string()));
         Ok(())
     }
 

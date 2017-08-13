@@ -31,8 +31,8 @@ impl DecodedProgram {
     pub fn code_size(&self) -> usize {
         let mut pc = 0;
 
-        for ref code_decl in &self.code[..] {
-            match **code_decl {
+        for code_decl in &self.code {
+            match *code_decl {
                 CodeDecl::Label(_) => {
                     pc = next_aligned_addr(pc, WORD_SIZE);
                 }
@@ -49,7 +49,7 @@ impl DecodedProgram {
     pub fn data_size(&self) -> usize {
         let mut pc = 0;
 
-        for data_decl in &self.data[..] {
+        for data_decl in &self.data {
             match *data_decl {
                 DataDecl::Label(_) => {
                     pc = next_aligned_addr(pc, WORD_SIZE);
@@ -73,7 +73,7 @@ impl DecodedProgram {
         pc
     }
 
-    pub fn read_file<'a>(&mut self, path: &'a str) -> Result<(), ParseError> {
+    pub fn read_file(&mut self, path: &str) -> Result<(), ParseError> {
         let file = File::open(path).map_err(ParseError::IOError)?;
         self.read(file)
     }
@@ -82,7 +82,7 @@ impl DecodedProgram {
         let buffer = io::BufReader::new(reader);
         for line_result in buffer.lines() {
             let raw_line = line_result.map_err(ParseError::IOError)?;
-            self.read_line(&raw_line[..])?;
+            self.read_line(&raw_line)?;
         }
 
         Ok(())
@@ -100,7 +100,7 @@ impl DecodedProgram {
         let line = clean_line(raw_line);
         let tokens: Vec<&str> = line.split_whitespace().collect();
 
-        if tokens.len() == 0 {
+        if tokens.is_empty() {
             return Ok(());
         }
 
@@ -144,13 +144,13 @@ impl DecodedProgram {
 
     fn print_data(&self) {
         println!(".data");
-        for data_decl in self.data.iter().cloned() {
-            match data_decl {
-                DataDecl::Label(label) => {
+        for data_decl in &self.data {
+            match *data_decl {
+                DataDecl::Label(ref label) => {
                     println!("{}:", label);
                 }
 
-                DataDecl::Data(data) => {
+                DataDecl::Data(ref data) => {
                     println!("  {:?}", data);
                 }
             }
@@ -159,13 +159,13 @@ impl DecodedProgram {
 
     fn print_code(&self) {
         println!(".code");
-        for code_decl in self.code.iter().cloned() {
-            match code_decl {
-                CodeDecl::Label(label) => {
+        for code_decl in &self.code {
+            match *code_decl {
+                CodeDecl::Label(ref label) => {
                     println!("{}:", label);
                 }
 
-                CodeDecl::Instruction(instruction) => {
+                CodeDecl::Instruction(ref instruction) => {
                     println!("  {:?}", instruction);
                 }
             }

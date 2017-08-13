@@ -117,7 +117,18 @@ pub unsafe fn to_int(trits: *const Trit, len: isize) -> isize {
 
     n
 }
+/*
+pub fn to_int(trits: &[Trit]) -> i64 {
+    let mut n = 0;
 
+    for trit in trits.iter().rev() {
+        let t = *trit as i64;
+        n = n * 3 + t
+    }
+
+    n
+}
+*/
 pub fn write_trytes<I>(trits: *mut Trit, iterable: I)
     where I: IntoIterator<Item = isize>
 {

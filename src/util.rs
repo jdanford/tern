@@ -29,9 +29,11 @@ pub fn vm_from_code(code: &str) -> Result<VM, String> {
     program.read_str(code).map_err(|e| format!("{:?}", e))?;
 
     let mut vm = VM::new(program.size());
-
-    let mut encoder = EncodedProgram::new(vm.memory.as_mut_ptr(), vm.memory.len());
-    encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    
+    {
+        let mut encoder = EncodedProgram::new(&mut vm.memory);
+        encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    }
 
     Ok(vm)
 }
@@ -41,9 +43,11 @@ pub fn vm_from_reader<R: Read>(reader: R) -> Result<VM, String> {
     program.read(reader).map_err(|e| format!("{:?}", e))?;
 
     let mut vm = VM::new(program.size());
-
-    let mut encoder = EncodedProgram::new(vm.memory.as_mut_ptr(), vm.memory.len());
-    encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    
+    {
+        let mut encoder = EncodedProgram::new(&mut vm.memory);
+        encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    }
 
     Ok(vm)
 }

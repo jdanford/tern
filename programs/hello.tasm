@@ -3,7 +3,7 @@ message:
     %string "Hello, ternary world!"
 
 .code
-start:
+__start:
     movi $s0, 0
     mova $a0, message
     syscall

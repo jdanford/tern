@@ -34,12 +34,12 @@ impl Syscall {
             }
 
             Syscall::PrintTernary => {
-                let src = vm.src(Register::A0);
+                let src = vm.src(Register::A0).as_ptr();
                 print!("{}", ternary::to_str(src, WORD_ISIZE));
             }
 
             Syscall::GetRand => {
-                let dest = vm.dest(Register::A0);
+                let dest = vm.dest(Register::A0).as_mut_ptr();
                 let mut rng = rand::thread_rng();
                 util::random_word(dest, &mut rng, WORD_ISIZE);
             }
