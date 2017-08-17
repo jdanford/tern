@@ -16,11 +16,11 @@ pub fn next_aligned_addr(addr: Addr, alignment: usize) -> Addr {
     }
 }
 
-pub fn random_word<R: Rng>(trits: *mut Trit, rng: &mut R, len: isize) {
-    unsafe { ternary::clear(trits, len) };
+pub fn random_word<R: Rng>(trits: &mut [Trit], rng: &mut R) {
+    unsafe { ternary::clear(trits.as_mut_ptr(), trits.len() as isize) };
 
-    for (i, trit) in rng.gen_iter().take(len as usize).enumerate() {
-        unsafe { *trits.offset(i as isize) = trit };
+    for (rand, ptr) in rng.gen_iter().zip(trits) {
+        *ptr = rand;
     }
 }
 

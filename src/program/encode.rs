@@ -54,10 +54,10 @@ impl<'a> EncodedProgram<'a> {
         }
     }
 
-    pub fn insert_label(&mut self, label: &String) {
+    pub fn insert_label(&mut self, label: String) {
         self.pc = next_aligned_addr(self.pc, WORD_SIZE);
         let addr = self.pc;
-        self.labels.insert(label.clone(), addr);
+        self.labels.insert(label, addr);
     }
 
     pub fn encode(&mut self, program: DecodedProgram) -> EncodeResult<usize> {
@@ -66,27 +66,27 @@ impl<'a> EncodedProgram<'a> {
             return Err(EncodeError::InsufficientMemory(required_size, self.memory.len()));
         }
 
-        unsafe { ternary::from_int(self.memory.as_mut_ptr(), PROGRAM_MAGIC_NUMBER, WORD_ISIZE) };
+        ternary::from_int(&mut self.memory[..WORD_SIZE], PROGRAM_MAGIC_NUMBER);
         self.pc += WORD_SIZE;
 
         // save space for pc start
         let pc_start_offset = self.pc;
         self.pc += WORD_SIZE;
 
-        let _ = self.encode_data_section(&program.data[..])?;
+        let _ = self.encode_data_section(&program.data)?;
 
         self.pc = next_aligned_addr(self.pc, WORD_SIZE);
 
-        let _ = self.encode_code_section(&program.code[..])?;
+        let _ = self.encode_code_section(&program.code)?;
 
         let pc_start = self.labels
             .get(START_LABEL)
             .cloned()
             .ok_or_else(|| EncodeError::MissingRequiredLabel(START_LABEL.to_string()))?;
-
-        unsafe {
-            let local_memory = self.memory.as_mut_ptr().offset(pc_start_offset as isize);
-            ternary::from_int(local_memory, pc_start as isize, WORD_ISIZE);
+        
+        {
+            let local_memory = &mut self.memory[pc_start_offset..][..WORD_SIZE];
+            ternary::from_int(local_memory, pc_start as isize);
         }
 
         self.patch_addrs();
@@ -101,7 +101,11 @@ impl<'a> EncodedProgram<'a> {
                 Patch::Relative(pc, ref label) => self.relative_addr(pc, label).unwrap(),
             };
 
-            unsafe { ternary::from_int(ptr, addr, patch.size()) };
+            unsafe {
+                use std::slice;
+                let slice = slice::from_raw_parts_mut(ptr, patch.size() as usize);
+                ternary::from_int(slice, addr);
+            };
         }
     }
 
@@ -111,14 +115,14 @@ impl<'a> EncodedProgram<'a> {
         for data_decl in all_data {
             match *data_decl {
                 DataDecl::Label(ref label) => {
-                    self.insert_label(label);
+                    self.insert_label(label.clone());
                 }
 
                 DataDecl::Data(ref data) => {
                     self.pc = next_aligned_addr(self.pc, data.alignment());
 
-                    let size = unsafe {
-                        let local_memory = self.memory.as_mut_ptr().offset(self.pc as isize);
+                    let size = {
+                        let local_memory = &mut self.memory[self.pc..];
                         data.write(local_memory)
                     };
 
@@ -137,14 +141,14 @@ impl<'a> EncodedProgram<'a> {
         for code_decl in all_code {
             match *code_decl {
                 CodeDecl::Label(ref label) => {
-                    self.insert_label(label);
+                    self.insert_label(label.clone());
                 }
 
                 CodeDecl::Instruction(ref instruction) => {
                     assert_eq!(self.pc % WORD_SIZE, 0);
 
+                    let local_memory = self.memory[self.pc..].as_mut_ptr();
                     unsafe {
-                        let local_memory = self.memory.as_mut_ptr().offset(self.pc as isize);
                         self.encode_instruction(local_memory, instruction)?;
                     }
 
@@ -375,12 +379,16 @@ impl<'a> EncodedProgram<'a> {
     }
 
     unsafe fn encode_opcode(&self, memory: *mut Trit, opcode: Opcode) -> EncodeResult<()> {
-        ternary::from_int(memory, opcode as isize, WORD_ISIZE);
+        use std::slice;
+        let slice = slice::from_raw_parts_mut(memory, WORD_SIZE);
+        ternary::from_int(slice, opcode as isize);
         Ok(())
     }
 
     unsafe fn encode_register(&self, memory: *mut Trit, register: Register) -> EncodeResult<()> {
-        ternary::from_int(memory, register as isize, WORD_ISIZE);
+        use std::slice;
+        let slice = slice::from_raw_parts_mut(memory, WORD_SIZE);
+        ternary::from_int(slice, register as isize);
         Ok(())
     }
 

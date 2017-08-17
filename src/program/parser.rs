@@ -70,6 +70,7 @@ pub enum ParseError {
 pub type ParseResult<T> = Result<T, ParseError>;
 
 pub fn clean_line(raw_line: &str) -> &str {
+    /*
     let line = raw_line.trim();
     let mut end = line.len();
     for (i, c) in line.chars().enumerate() {
@@ -79,7 +80,9 @@ pub fn clean_line(raw_line: &str) -> &str {
         }
     }
 
-    &line[..end].trim()
+    line[..end].trim()
+    */
+    raw_line.split(';').nth(0).unwrap().trim()
 }
 
 pub fn line_is_label(line: &str) -> bool {
@@ -170,19 +173,19 @@ fn parse_decimal(s: &str) -> ParseResult<isize> {
 }
 
 fn parse_tryte(s: &str) -> ParseResult<Tryte> {
-    let mut tryte = EMPTY_TRYTE;
+    let tryte = &mut EMPTY_TRYTE;
 
     if let Ok(int) = s.parse() {
         assert!(TRYTE_MIN <= int && int <= TRYTE_MAX);
-        unsafe { ternary::from_int(mut_ptr!(tryte), int, TRYTE_ISIZE) };
-        return Ok(tryte);
+        ternary::from_int(tryte, int);
+        return Ok(*tryte);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
         if let Some(trit_str) = captures.at(1) {
             assert!(trit_str.len() <= TRYTE_SIZE);
-            unsafe { ternary::from_str(mut_ptr!(tryte), trit_str) };
-            Ok(tryte)
+            ternary::from_str(tryte, trit_str);
+            Ok(*tryte)
         } else {
             Err(ParseError::InvalidTernary(s.to_string(), TRYTE_SIZE))
         }
@@ -190,19 +193,19 @@ fn parse_tryte(s: &str) -> ParseResult<Tryte> {
 }
 
 fn parse_half(s: &str) -> ParseResult<Half> {
-    let mut half = EMPTY_HALF;
+    let half = &mut EMPTY_HALF;
 
     if let Ok(int) = s.parse() {
         assert!(HALF_MIN <= int && int <= HALF_MAX);
-        unsafe { ternary::from_int(mut_ptr!(half), int, HALF_ISIZE) };
-        return Ok(half);
+        ternary::from_int(half, int);
+        return Ok(*half);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
         if let Some(trit_str) = captures.at(1) {
             assert!(trit_str.len() <= HALF_SIZE);
-            unsafe { ternary::from_str(mut_ptr!(half), trit_str) };
-            Ok(half)
+            ternary::from_str(half, trit_str);
+            Ok(*half)
         } else {
             Err(ParseError::InvalidTernary(s.to_string(), HALF_SIZE))
         }
@@ -210,19 +213,19 @@ fn parse_half(s: &str) -> ParseResult<Half> {
 }
 
 fn parse_word(s: &str) -> ParseResult<Word> {
-    let mut word = EMPTY_WORD;
+    let word = &mut EMPTY_WORD;
 
     if let Ok(int) = s.parse() {
         assert!(WORD_MIN <= int && int <= WORD_MAX);
-        unsafe { ternary::from_int(mut_ptr!(word), int, WORD_ISIZE) };
-        return Ok(word);
+        ternary::from_int(word, int);
+        return Ok(*word);
     }
 
     with_regex_captures(patterns::TERNARY, s, |ref captures| {
         if let Some(trit_str) = captures.at(1) {
             assert!(trit_str.len() <= WORD_SIZE);
-            unsafe { ternary::from_str(mut_ptr!(word), trit_str) };
-            Ok(word)
+            ternary::from_str(word, trit_str);
+            Ok(*word)
         } else {
             Err(ParseError::InvalidTernary(s.to_string(), WORD_SIZE))
         }
@@ -254,7 +257,7 @@ fn unescape_string(s: &str) -> ParseResult<String> {
     Ok(result)
 }
 
-fn unescape_chars<I>(chars: &mut I) -> ParseResult<char> where I: Iterator<Item = char> {
+fn unescape_chars<I: Iterator<Item = char>>(chars: &mut I) -> ParseResult<char> {
     match chars.next() {
         Some('u') => {
             let seq: String = chars.take(4).collect();
@@ -283,19 +286,19 @@ fn data_from_parts(type_name: &str, rest: &str) -> ParseResult<StaticData> {
     match type_name {
         "tryte" => {
             let tryte = parse_tryte(rest)?;
-            let i = unsafe { ternary::to_int(ptr!(tryte), TRYTE_ISIZE) };
+            let i = ternary::to_int(&tryte);
             Ok(StaticData::Tryte(i))
         }
 
         "half" => {
             let half = parse_half(rest)?;
-            let i = unsafe { ternary::to_int(ptr!(half), HALF_ISIZE) };
+            let i = ternary::to_int(&half);
             Ok(StaticData::Half(i))
         }
 
         "word" => {
             let word = parse_word(rest)?;
-            let i = unsafe { ternary::to_int(ptr!(word), WORD_ISIZE) };
+            let i = ternary::to_int(&word);
             Ok(StaticData::Word(i))
         }
 

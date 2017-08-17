@@ -16,11 +16,11 @@ pub unsafe fn copy(dest: *mut Trit, src: *const Trit, len: isize) {
     }
 }
 
-pub unsafe fn map<F>(dest: *mut Trit, src: *const Trit, len: isize, f: F)
+pub fn map<F>(dest: &mut [Trit], src: &[Trit], f: F)
     where F: Fn(Trit) -> Trit
 {
-    for i in 0..len {
-        *dest.offset(i) = f(*src.offset(i));
+    for (d, s) in dest.iter_mut().zip(src) {
+        *d = f(*s);
     }
 }
 
@@ -64,35 +64,34 @@ pub unsafe fn copy_blocks(src: *const Trit,
     }
 }
 
-pub unsafe fn copy_from_iter<I>(dest: *mut Trit, iterable: I)
+pub fn copy_from_iter<I>(dest: &mut [Trit], iterable: I)
     where I: IntoIterator<Item = Trit>
 {
-    for (i, trit) in iterable.into_iter().enumerate() {
-        *dest.offset(i as isize) = trit;
+    for (ptr, trit) in dest.iter_mut().zip(iterable) {
+        *ptr = trit;
     }
 }
 
-pub unsafe fn from_str(dest: *mut Trit, s: &str) {
+pub fn from_str(dest: &mut [Trit], s: &str) {
     copy_from_iter(dest, s.bytes().rev().map(Trit::from))
 }
 
-pub unsafe fn to_str(trits: *const Trit, len: isize) -> String {
-    let mut s = String::with_capacity(len as usize);
+pub fn to_str(trits: &[Trit]) -> String {
+    let mut s = String::with_capacity(trits.len());
 
-    for i in (0..len).rev() {
-        let trit = *trits.offset(i);
-        s.push(trit.into());
+    for &t in trits {
+        s.push(t.into());
     }
 
     s
 }
 
-pub unsafe fn from_int(trits: *mut Trit, n: isize, len: isize) {
+pub fn from_int(trits: &mut [Trit], n: isize) {
     let negative = n < 0;
     let mut n = n.abs();
 
-    for i in 0..len {
-        let trit = match n % 3 {
+    for trit in trits {
+        let t = match n % 3 {
             0 => Trit::Zero,
             1 => Trit::Pos,
             2 => {
@@ -102,56 +101,47 @@ pub unsafe fn from_int(trits: *mut Trit, n: isize, len: isize) {
             _ => unreachable!()
         };
 
-        *trits.offset(i) = if negative { -trit } else { trit };
+        *trit = if negative { -t } else { t };
         n /= 3;
     }
 }
 
-pub unsafe fn to_int(trits: *const Trit, len: isize) -> isize {
-    let mut n = *trits.offset(len - 1) as isize;
-
-    for i in (0..len - 1).rev() {
-        let t = *trits.offset(i) as isize;
-        n = n * 3 + t
-    }
-
-    n
-}
-/*
-pub fn to_int(trits: &[Trit]) -> i64 {
+pub fn to_int(trits: &[Trit]) -> isize {
     let mut n = 0;
 
-    for trit in trits.iter().rev() {
-        let t = *trit as i64;
-        n = n * 3 + t
+    for &trit in trits.iter().rev() {
+        let t = trit as isize;
+        n = n * 3 + t;
     }
 
     n
 }
-*/
+
 pub fn write_trytes<I>(trits: *mut Trit, iterable: I)
     where I: IntoIterator<Item = isize>
 {
     for (i, tryte) in iterable.into_iter().enumerate() {
-        let offset = TRYTE_ISIZE * (i as isize);
+        let offset = TRYTE_SIZE * i;
         unsafe {
-            from_int(trits.offset(offset), tryte, TRYTE_ISIZE);
+            use std::slice;
+            let slice = slice::from_raw_parts_mut(trits, TRYTE_SIZE);
+            from_int(&mut slice[offset..], tryte);
         }
     }
 }
 
-pub unsafe fn read_trytes(trits: *const Trit) -> (isize, isize, isize, isize) {
-    (to_int(tryte_offset!(trits, 0), TRYTE_ISIZE),
-     to_int(tryte_offset!(trits, 1), TRYTE_ISIZE),
-     to_int(tryte_offset!(trits, 2), TRYTE_ISIZE),
-     to_int(tryte_offset!(trits, 3), TRYTE_ISIZE))
+pub fn read_trytes(trits: &[Trit]) -> (isize, isize, isize, isize) {
+    (to_int(&trits[0*TRYTE_SIZE..][..TRYTE_SIZE]),
+     to_int(&trits[1*TRYTE_SIZE..][..TRYTE_SIZE]),
+     to_int(&trits[2*TRYTE_SIZE..][..TRYTE_SIZE]),
+     to_int(&trits[3*TRYTE_SIZE..][..TRYTE_SIZE]))
 }
 
-pub unsafe fn mutate<F>(trits: *mut Trit, len: isize, f: F)
+pub fn mutate<F>(trits: &mut [Trit], f: F)
     where F: Fn(Trit) -> Trit
 {
-    for i in 0..len {
-        *trits.offset(i) = f(*trits.offset(i));
+    for trit in trits {
+        *trit = f(*trit);
     }
 }
 
@@ -191,10 +181,8 @@ pub unsafe fn multiply(dest: *mut Trit, lhs: *const Trit, rhs: *const Trit, len:
     }
 }
 
-pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
-    for i in (0..len - 1).rev() {
-        let lt = *lhs.offset(i);
-        let rt = *rhs.offset(i);
+pub fn compare(lhs: &[Trit], rhs: &[Trit]) -> Trit {
+    for (lt, rt) in lhs.iter().rev().zip(rhs.iter().rev()).skip(1) {
         if lt != rt {
             return Trit::from_ordering(lt.cmp(&rt));
         }
@@ -203,9 +191,8 @@ pub unsafe fn compare(lhs: *const Trit, rhs: *const Trit, len: isize) -> Trit {
     Trit::Zero
 }
 
-pub unsafe fn lowest_trit(trits: *const Trit, len: isize) -> Trit {
-    for i in 0..len - 1 {
-        let trit = *trits.offset(i);
+pub fn lowest_trit(trits: &[Trit]) -> Trit {
+    for &trit in trits {
         if trit != Trit::Zero {
             return trit;
         }
@@ -214,9 +201,8 @@ pub unsafe fn lowest_trit(trits: *const Trit, len: isize) -> Trit {
     Trit::Zero
 }
 
-pub unsafe fn highest_trit(trits: *const Trit, len: isize) -> Trit {
-    for i in (0..len - 1).rev() {
-        let trit = *trits.offset(i);
+pub fn highest_trit(trits: &[Trit]) -> Trit {
+    for &trit in trits.iter().rev() {
         if trit != Trit::Zero {
             return trit;
         }
@@ -225,21 +211,16 @@ pub unsafe fn highest_trit(trits: *const Trit, len: isize) -> Trit {
     Trit::Zero
 }
 
-pub unsafe fn popcount(trits: *const Trit, len: isize) -> (isize, isize) {
+pub fn popcount(trits: &[Trit]) -> (isize, isize) {
     let mut hi_count = 0;
     let mut lo_count = 0;
 
-    for i in 0..len {
-        match *trits.offset(i) {
-            Trit::Neg => {
-                lo_count += 1;
-            }
-
-            Trit::Pos => {
-                hi_count += 1;
-            }
-
-            Trit::Zero => {}
+    for &trit in trits {
+        if trit == Trit::Neg {
+            lo_count += 1;
+        }
+        else if trit == Trit::Pos {
+            hi_count += 1;
         }
     }
 

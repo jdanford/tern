@@ -32,25 +32,22 @@ impl VM {
     }
 
     pub fn read(&mut self, r: Register) -> isize {
-        unsafe { ternary::to_int(self.src(r).as_ptr(), WORD_ISIZE) }
+        ternary::to_int(self.src(r))
     }
 
     pub fn write(&mut self, r: Register, value: isize) {
-        unsafe {
-            ternary::from_int(self.dest(r).as_mut_ptr(), value, WORD_ISIZE);
-        }
+        ternary::from_int(self.dest(r), value);
     }
 
     pub fn clear(&mut self, r: Register) {
-        unsafe { ternary::clear(self.dest(r).as_mut_ptr(), WORD_ISIZE) }
+        self.dest(r).copy_from_slice(&EMPTY_WORD);
     }
 
     pub fn init(&mut self) {
-        let magic_number = unsafe { ternary::to_int(self.memory.as_ptr(), WORD_ISIZE) };
+        let magic_number = ternary::to_int(&self.memory[..WORD_SIZE]);
         assert_eq!(magic_number, PROGRAM_MAGIC_NUMBER);
 
-        let pc_start =
-            unsafe { ternary::to_int(self.memory[WORD_SIZE..].as_ptr(), WORD_ISIZE) } as Addr;
+        let pc_start = ternary::to_int(&self.memory[WORD_SIZE..][..WORD_SIZE]) as Addr;
         self.pc = pc_start;
 
         self.running = true;
@@ -75,7 +72,7 @@ impl VM {
 
     pub unsafe fn step(&mut self) {
         let inst = self.next_inst();
-        let (t0, t1, t2, t3) = ternary::read_trytes(ptr!(inst));
+        let (t0, t1, t2, t3) = ternary::read_trytes(&inst);
         let opcode = Opcode::from(t0);
 
         match opcode {
@@ -241,16 +238,16 @@ impl VM {
         dest.copy_from_slice(&word);
     }
 
-    unsafe fn op_mova(&mut self, r_dest: Register, addr: Addr) {
-        let dest = self.dest(r_dest).as_mut_ptr();
-        ternary::from_int(dest, addr as isize, WORD_ISIZE);
+    fn op_mova(&mut self, r_dest: Register, addr: Addr) {
+        let dest = self.dest(r_dest);
+        ternary::from_int(dest, addr as isize);
     }
 
     unsafe fn op_load(&mut self, r_dest: Register, r_addr: Register, offset: isize, len: isize) {
         let dest = self.dest(r_dest).as_mut_ptr();
 
-        let addr_src = self.src(r_addr).as_ptr();
-        let addr = ternary::to_int(addr_src, len);
+        let addr_src = self.src(r_addr);
+        let addr = ternary::to_int(&addr_src[..len as usize]);
         let src = self.memory[(addr + offset) as usize..].as_ptr();
 
         ternary::clear(dest, WORD_ISIZE);
@@ -260,8 +257,10 @@ impl VM {
     unsafe fn op_store(&mut self, r_addr: Register, r_src: Register, offset: isize, len: isize) {
         let src = self.src(r_src).as_ptr();
 
-        let addr_src = self.src(r_addr).as_ptr();
-        let addr = ternary::to_int(addr_src, len);
+        let addr = {
+            let addr_src = self.src(r_addr);
+            ternary::to_int(&addr_src[..len as usize])
+        };
         let dest = self.memory[(addr + offset) as usize..].as_mut_ptr();
 
         ternary::copy(dest, src, len);
@@ -314,8 +313,11 @@ impl VM {
         ternary::multiply(self.dest(Register::LO).as_mut_ptr(), lhs, rhs, len);
     }
 
-    unsafe fn op_not(&mut self, r_dest: Register, r_src: Register) {
-        ternary::map(self.dest(r_dest).as_mut_ptr(), self.src(r_src).as_ptr(), WORD_ISIZE, |t| -t);
+    fn op_not(&mut self, r_dest: Register, r_src: Register) {
+        let word = &mut EMPTY_WORD;
+        word.copy_from_slice(self.dest(r_dest));
+        ternary::map(word, self.src(r_src), |t| -t);
+        self.dest(r_dest).copy_from_slice(word);
     }
 
     unsafe fn op_and(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
@@ -369,14 +371,13 @@ impl VM {
     }
 
     fn op_cmp(&mut self, r_dest: Register, r_lhs: Register, r_rhs: Register) {
-        let dest = self.dest(r_dest).as_mut_ptr();
-        let lhs = self.src(r_lhs).as_ptr();
-        let rhs = self.src(r_rhs).as_ptr();
+        let word = &mut EMPTY_WORD;
 
-        unsafe {
-            ternary::clear(dest, WORD_ISIZE);
-            *dest.offset(0) = ternary::compare(lhs, rhs, WORD_ISIZE);
-        }
+        word.copy_from_slice(self.dest(r_dest));
+        
+        word[0] = ternary::compare(self.src(r_lhs), self.src(r_rhs));
+        
+        self.dest(r_dest).copy_from_slice(word);
     }
 
     fn op_jmp(&mut self, addr: Addr) {
@@ -426,13 +427,13 @@ fn inst_half(inst: Word) -> Half {
 }
 
 fn inst_half_isize(inst: Word) -> isize {
-    unsafe { ternary::to_int(tryte_ptr!(inst, 2), HALF_ISIZE) }
+    ternary::to_int(&inst[2*TRYTE_SIZE..][..HALF_SIZE])
 }
 
 fn inst_reladdr(inst: Word) -> RelAddr {
-    unsafe { ternary::to_int(tryte_ptr!(inst, 2), HALF_ISIZE) as RelAddr }
+    ternary::to_int(&inst[2*TRYTE_SIZE..][..HALF_SIZE]) as RelAddr
 }
 
 fn inst_addr(inst: Word) -> Addr {
-    unsafe { ternary::to_int(ptr!(inst), WORD_ISIZE) as Addr }
+    ternary::to_int(&inst[..WORD_SIZE]) as Addr
 }
