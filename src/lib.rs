@@ -1,5 +1,4 @@
 extern crate core;
-extern crate libc;
 extern crate rand;
 extern crate regex;
 

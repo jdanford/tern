@@ -35,24 +35,24 @@ impl StaticData {
         }
     }
 
-    pub unsafe fn write(&self, memory: *mut Trit) -> usize {
+    pub fn write(&self, memory: &mut [Trit]) -> usize {
         match *self {
             StaticData::Tryte(i) => {
-                ternary::from_int(memory, i, TRYTE_ISIZE);
+                ternary::from_int(&mut memory[..TRYTE_SIZE], i);
                 TRYTE_SIZE
             }
 
             StaticData::Half(i) => {
-                ternary::from_int(memory, i, HALF_ISIZE);
+                ternary::from_int(&mut memory[..HALF_SIZE], i);
                 HALF_SIZE
             }
 
             StaticData::Word(i) => {
-                ternary::from_int(memory, i, WORD_ISIZE);
+                ternary::from_int(&mut memory[..WORD_SIZE], i);
                 WORD_SIZE
             }
-
-            StaticData::String(ref s) => text::encode_str(memory, &s[..]) * TRYTE_SIZE + WORD_SIZE,
+            
+            StaticData::String(ref s) => text::encode_str(memory, s) * TRYTE_SIZE + WORD_SIZE,
 
             StaticData::Array(ref data, count) => {
                 for _ in 0..count {

@@ -1,5 +1,4 @@
 use rand;
-use std::mem::transmute;
 use std::process;
 
 use types::*;
@@ -19,11 +18,11 @@ pub enum Syscall {
 }
 
 impl Syscall {
-    pub unsafe fn perform(self, vm: &mut VM) {
+    pub fn perform(self, vm: &mut VM) {
         match self {
             Syscall::PrintString => {
                 let addr = vm.read(Register::A0);
-                let local_memory = vm.memory.offset(addr);
+                let local_memory = &vm.memory[addr as usize..];
                 let (s, _) = text::decode_str(local_memory);
                 print!("{}", s);
             }
@@ -35,13 +34,13 @@ impl Syscall {
 
             Syscall::PrintTernary => {
                 let src = vm.src(Register::A0);
-                print!("{}", ternary::to_str(src, WORD_ISIZE));
+                print!("{}", ternary::to_str(src));
             }
 
             Syscall::GetRand => {
                 let dest = vm.dest(Register::A0);
                 let mut rng = rand::thread_rng();
-                util::random_word(dest, &mut rng, WORD_ISIZE);
+                util::random_word(&mut dest[..WORD_SIZE], &mut rng);
             }
 
             Syscall::Exit => {
@@ -54,6 +53,13 @@ impl Syscall {
 
 impl From<isize> for Syscall {
     fn from(i: isize) -> Syscall {
-        unsafe { transmute(i as u8) }
+        match i {
+            0 => Syscall::PrintString,
+            1 => Syscall::PrintDecimal,
+            2 => Syscall::PrintTernary,
+            3 => Syscall::GetRand,
+            4 => Syscall::Exit,
+            _ => unimplemented!()
+        }
     }
 }

@@ -16,34 +16,38 @@ pub fn next_aligned_addr(addr: Addr, alignment: usize) -> Addr {
     }
 }
 
-pub fn random_word<R: Rng>(trits: *mut Trit, rng: &mut R, len: isize) {
-    unsafe { ternary::clear(trits, len) };
+pub fn random_word<R: Rng>(trits: &mut [Trit], rng: &mut R) {
+    unsafe { ternary::clear(trits.as_mut_ptr(), trits.len() as isize) };
 
-    for (i, trit) in rng.gen_iter().take(len as usize).enumerate() {
-        unsafe { *trits.offset(i as isize) = trit };
+    for (rand, ptr) in rng.gen_iter().zip(trits) {
+        *ptr = rand;
     }
 }
 
 pub fn vm_from_code(code: &str) -> Result<VM, String> {
     let mut program = DecodedProgram::new();
-    try!(program.read_str(code).map_err(|e| format!("{:?}", e)));
+    program.read_str(code).map_err(|e| format!("{:?}", e))?;
 
-    let vm = VM::new(program.size());
-
-    let mut encoder = EncodedProgram::new(vm.memory, vm.memory_size);
-    try!(encoder.encode(program).map_err(|e| format!("{:?}", e)));
+    let mut vm = VM::new(program.size());
+    
+    {
+        let mut encoder = EncodedProgram::new(&mut vm.memory);
+        encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    }
 
     Ok(vm)
 }
 
 pub fn vm_from_reader<R: Read>(reader: R) -> Result<VM, String> {
     let mut program = DecodedProgram::new();
-    try!(program.read(reader).map_err(|e| format!("{:?}", e)));
+    program.read(reader).map_err(|e| format!("{:?}", e))?;
 
-    let vm = VM::new(program.size());
-
-    let mut encoder = EncodedProgram::new(vm.memory, vm.memory_size);
-    try!(encoder.encode(program).map_err(|e| format!("{:?}", e)));
+    let mut vm = VM::new(program.size());
+    
+    {
+        let mut encoder = EncodedProgram::new(&mut vm.memory);
+        encoder.encode(program).map_err(|e| format!("{:?}", e))?;
+    }
 
     Ok(vm)
 }

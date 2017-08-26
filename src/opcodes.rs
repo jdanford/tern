@@ -1,5 +1,4 @@
 use std::fmt;
-use std::mem::transmute;
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Opcode {
@@ -172,11 +171,51 @@ impl Opcode {
 
 impl From<isize> for Opcode {
     fn from(n: isize) -> Opcode {
-        if !Opcode::index_is_valid(n) {
-            panic!("Invalid index: {}", n);
-        }
+        match n {
+            0 => Opcode::Mov,
+            1 => Opcode::Movi,
+            2 => Opcode::Movw,
+            3 => Opcode::Mova,
 
-        unsafe { transmute(n as u8) }
+            4 => Opcode::Lt,
+            5 => Opcode::Lh,
+            6 => Opcode::Lw,
+
+            7 => Opcode::St,
+            8 => Opcode::Sh,
+            9 => Opcode::Sw,
+
+            10 => Opcode::Add,
+            11 => Opcode::Addi,
+            12 => Opcode::Mul,
+            13 => Opcode::Muli,
+
+            14 => Opcode::Not,
+            15 => Opcode::And,
+            16 => Opcode::Andi,
+            17 => Opcode::Or,
+            18 => Opcode::Ori,
+            19 => Opcode::Shf,
+            20 => Opcode::Shfi,
+            21 => Opcode::Cmp,
+
+            22 => Opcode::Jmp,
+            23 => Opcode::JT,
+            24 => Opcode::J0,
+            25 => Opcode::J1,
+            26 => Opcode::JT0,
+            27 => Opcode::JT1,
+            28 => Opcode::J01,
+
+            29 => Opcode::Call,
+            30 => Opcode::Ret,
+
+            31 => Opcode::Syscall,
+            32 => Opcode::Break,
+            33 => Opcode::Halt,
+            
+            _ => panic!("Invalid index: {}", n)
+        }
     }
 }
 
